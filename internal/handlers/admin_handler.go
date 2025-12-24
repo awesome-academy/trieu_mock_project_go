@@ -6,8 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ShowAdminDashboard(c *gin.Context) {
+func AdminDashboardPageHandler(c *gin.Context) {
 	c.HTML(http.StatusOK, "pages/admin_dashboard.html", gin.H{
-		"title":      "Admin Dashboard",
+		"title": "Admin Dashboard",
 	})
 }

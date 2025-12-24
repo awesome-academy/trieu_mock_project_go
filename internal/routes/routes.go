@@ -13,11 +13,11 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 	router.GET("/logout", appContainer.LogoutHandler)
 
 	router.Use(appContainer.RequireLoginMiddleware)
-	router.GET("/", appContainer.ShowDashboardHandler)
+	router.GET("/", appContainer.DashboardPageHandler)
 
 	adminGroup := router.Group("/admin")
 	adminGroup.Use(appContainer.RequireAdminMiddleware)
 	{
-		adminGroup.GET("/", appContainer.ShowAdminDashboardHandler)
+		adminGroup.GET("/", appContainer.AdminDashboardPageHandler)
 	}
 }

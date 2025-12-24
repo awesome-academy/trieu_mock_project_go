@@ -81,7 +81,7 @@ func RunMigrations() error {
 		return err
 	}
 
-	log.Println("✅ Migrations applied successfully")
+	log.Println("Migrations applied successfully")
 	return nil
 }
 

@@ -2,45 +2,47 @@ package handlers
 
 import (
 	"net/http"
+	"trieu_mock_project_go/internal/services"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
-func ShowLogin(c *gin.Context) {
+func ShowLoginHandler(c *gin.Context) {
 	c.HTML(http.StatusOK, "pages/login.html", gin.H{
 		"title": "Login Page",
 	})
 }
 
-func DoLogin(c *gin.Context) {
-	email := c.PostForm("email")
-	password := c.PostForm("password")
+func NewDoLoginHandler(userService *services.UserService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		email := c.PostForm("email")
+		password := c.PostForm("password")
 
-	session := sessions.Default(c)
-	if email == "admin@sun-asterisk.com" && password == "password" {
-		session.Set("user_id", 1)
-		session.Set("role", "admin")
-		session.Save()
-		c.Redirect(http.StatusSeeOther, "/admin")
-		return
-	}
+		user, err := userService.Login(email, password)
+		if err != nil {
+			c.HTML(http.StatusUnauthorized, "pages/login.html", gin.H{
+				"title": "Login Page",
+				"error": "Invalid email or password",
+			})
+			return
+		}
 
-	if email == "user@sun-asterisk.com" && password == "password" {
-		session.Set("user_id", 2)
-		session.Set("role", "user")
+		session := sessions.Default(c)
+		session.Set("user_id", user.ID)
+		session.Set("role", user.Role)
 		session.Save()
+
+		if user.Role == "admin" {
+			c.Redirect(http.StatusSeeOther, "/admin")
+			return
+		}
+
 		c.Redirect(http.StatusSeeOther, "/")
-		return
 	}
-
-	c.HTML(http.StatusUnauthorized, "login.page.tmpl", gin.H{
-		"title": "Login Page",
-		"error": "Invalid email or password",
-	})
 }
 
-func Logout(c *gin.Context) {
+func LogoutHandler(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Clear()
 	session.Save()

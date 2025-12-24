@@ -6,8 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ShowDashboard(c *gin.Context) {
+func DashboardPageHandler(c *gin.Context) {
 	c.HTML(http.StatusOK, "pages/dashboard.html", gin.H{
-		"title":      "Home",
+		"title": "Dashboard",
 	})
 }
