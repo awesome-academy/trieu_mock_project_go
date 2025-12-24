@@ -24,7 +24,8 @@ func main() {
 	// Create Gin router
 	router := gin.Default()
 
-	router.LoadHTMLGlob("templates/**/*.tmpl")
+	router.LoadHTMLGlob("templates/**/*")
+
 	router.Static("/static", "./static")
 
 	store := cookie.NewStore([]byte(cfg.AppSecret))

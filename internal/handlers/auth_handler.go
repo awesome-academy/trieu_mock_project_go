@@ -8,7 +8,7 @@ import (
 )
 
 func ShowLogin(c *gin.Context) {
-	c.HTML(http.StatusOK, "login.page.tmpl", gin.H{
+	c.HTML(http.StatusOK, "pages/login.html", gin.H{
 		"title": "Login Page",
 	})
 }

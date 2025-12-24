@@ -7,7 +7,7 @@ import (
 )
 
 func ShowDashboard(c *gin.Context) {
-	c.HTML(http.StatusOK, "home.page.tmpl", gin.H{
+	c.HTML(http.StatusOK, "pages/dashboard.html", gin.H{
 		"title":      "Home",
 	})
 }
