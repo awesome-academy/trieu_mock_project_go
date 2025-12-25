@@ -8,9 +8,10 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
+	Server    ServerConfig
+	Database  DatabaseConfig
 	AppSecret string
+	JWT       JWTConfig
 }
 
 type ServerConfig struct {
@@ -25,6 +26,10 @@ type DatabaseConfig struct {
 	User     string
 	Password string
 	Database string
+}
+
+type JWTConfig struct {
+	Secret string
 }
 
 var (
@@ -51,7 +56,10 @@ func LoadConfig() *Config {
 				Password: getEnv("DB_PASSWORD", "password"),
 				Database: getEnv("DB_NAME", "trieu_mock_project_go"),
 			},
-			AppSecret: getEnv("APP_SECRET", "trieu-mock-project-go-secret"),
+			AppSecret: getEnv("SESSION_SECRET", "trieu-mock-project-go-secret"),
+			JWT: JWTConfig{
+				Secret: getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
+			},
 		}
 	})
 	return cfg

@@ -2,49 +2,58 @@ package handlers
 
 import (
 	"net/http"
+	"trieu_mock_project_go/internal/dtos"
+	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/services"
+	"trieu_mock_project_go/internal/utils"
 
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
-func ShowLoginHandler(c *gin.Context) {
+type AuthHandler struct {
+	authService *services.AuthService
+}
+
+func NewAuthHandler(authService *services.AuthService) *AuthHandler {
+	return &AuthHandler{authService: authService}
+}
+
+func (h *AuthHandler) ShowLoginPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "pages/login.html", gin.H{
-		"title": "Login Page",
+		"title": "User Login",
 	})
 }
 
-func NewDoLoginHandler(userService *services.UserService) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		email := c.PostForm("email")
-		password := c.PostForm("password")
+func (h *AuthHandler) UserLogin(c *gin.Context) {
+	var req dtos.LoginRequest
 
-		user, err := userService.Login(email, password)
-		if err != nil {
-			c.HTML(http.StatusUnauthorized, "pages/login.html", gin.H{
-				"title": "Login Page",
-				"error": "Invalid email or password",
-			})
-			return
-		}
-
-		session := sessions.Default(c)
-		session.Set("user_id", user.ID)
-		session.Set("role", user.Role)
-		session.Save()
-
-		if user.Role == "admin" {
-			c.Redirect(http.StatusSeeOther, "/admin")
-			return
-		}
-
-		c.Redirect(http.StatusSeeOther, "/")
+	// Validate request body
+	if appErrors.HandleBindError(c, c.ShouldBindJSON(&req)) {
+		return
 	}
-}
 
-func LogoutHandler(c *gin.Context) {
-	session := sessions.Default(c)
-	session.Clear()
-	session.Save()
-	c.Redirect(http.StatusSeeOther, "/login")
+	// Login user
+	user, err := h.authService.Login(c.Request.Context(), req.User.Email, req.User.Password)
+	if err != nil {
+		appErrors.RespondError(
+			c,
+			http.StatusUnauthorized,
+			"Invalid email or password",
+		)
+		return
+	}
+
+	token, err := utils.GenerateJWTToken(int64(user.ID), user.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	resp := dtos.LoginResponse{}
+	resp.User.ID = int64(user.ID)
+	resp.User.Name = user.Name
+	resp.User.Email = user.Email
+	resp.User.AccessToken = token
+
+	c.JSON(http.StatusOK, resp)
 }

@@ -12,19 +12,18 @@ import (
 
 type AppContainer struct {
 	// Middlewares
-	RequireLoginMiddleware gin.HandlerFunc
-	RequireAdminMiddleware gin.HandlerFunc
+	AdminAuthMiddleware gin.HandlerFunc
+	JWTAuthMiddleware   gin.HandlerFunc
 
 	// Services
-	UserService *services.UserService
+	AuthService *services.AuthService
 
 	// Handlers
-	ShowLoginHandler     gin.HandlerFunc
-	DoLoginHandler       gin.HandlerFunc
-	LogoutHandler        gin.HandlerFunc
-	DashboardPageHandler gin.HandlerFunc
+	AuthHandler      *handlers.AuthHandler
+	DashboardHandler *handlers.DashboardHandler
 	// Admin Handlers
-	AdminDashboardPageHandler gin.HandlerFunc
+	AdminAuthHandler      *handlers.AdminAuthHandler
+	AdminDashboardHandler *handlers.AdminDashboardHandler
 }
 
 func NewAppContainer() *AppContainer {
@@ -32,22 +31,21 @@ func NewAppContainer() *AppContainer {
 	userRepo := repositories.NewUserRepository()
 
 	// Initialize services
-	userService := services.NewUserService(config.DB, userRepo)
+	authService := services.NewAuthService(config.DB, userRepo)
 
 	return &AppContainer{
 		// Middlewares
-		RequireLoginMiddleware: middlewares.RequireLogin(),
-		RequireAdminMiddleware: middlewares.RequireAdmin(),
+		JWTAuthMiddleware:   middlewares.JWTAuthMiddleware(),
+		AdminAuthMiddleware: middlewares.AdminAuthMiddleware(),
 
 		// Services
-		UserService: userService,
+		AuthService: authService,
 
 		// Handlers
-		ShowLoginHandler:     handlers.ShowLoginHandler,
-		DoLoginHandler:       handlers.NewDoLoginHandler(userService),
-		LogoutHandler:        handlers.LogoutHandler,
-		DashboardPageHandler: handlers.DashboardPageHandler,
+		AuthHandler:      handlers.NewAuthHandler(authService),
+		DashboardHandler: handlers.NewDashboardHandler(),
 		// Admin Handlers
-		AdminDashboardPageHandler: handlers.AdminDashboardPageHandler,
+		AdminAuthHandler:      handlers.NewAdminAuthHandler(authService),
+		AdminDashboardHandler: handlers.NewAdminDashboardHandler(),
 	}
 }
