@@ -80,6 +80,49 @@ paths:
           schema:
             $ref: "#/definitions/ErrorResponse"
 
+  /api/teams:
+    get:
+      summary: List Teams
+      description: Retrieve a list of teams with pagination
+      operationId: listTeams
+      tags:
+        - Teams
+      security:
+        - Bearer: []
+      parameters:
+        - in: query
+          name: limit
+          description: Number of teams to retrieve (max 100)
+          required: false
+          type: integer
+          default: 10
+          minimum: 1
+          maximum: 100
+        - in: query
+          name: offset
+          description: Number of teams to skip for pagination
+          required: false
+          type: integer
+          default: 0
+          minimum: 0
+      responses:
+        200:
+          description: Teams retrieved successfully
+          schema:
+            $ref: "#/definitions/ListTeamsResponse"
+        400:
+          description: Invalid query parameters
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized access
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
 definitions:
   LoginRequest:
     type: object
@@ -210,6 +253,72 @@ definitions:
       name:
         type: string
         example: "Go Programming"
+
+  ListTeamsResponse:
+    type: object
+    properties:
+      teams:
+        type: array
+        items:
+          $ref: "#/definitions/TeamDetail"
+      page:
+        $ref: "#/definitions/PaginationResponse"
+
+  TeamDetail:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: uint
+        example: 1
+      name:
+        type: string
+        example: "Backend Team"
+      description:
+        type: string
+        example: "Team responsible for backend development"
+      created_at:
+        type: string
+        format: date-time
+        example: "2024-01-01T00:00:00Z"
+      updated_at:
+        type: string
+        format: date-time
+        example: "2024-01-15T00:00:00Z"
+      leader:
+        $ref: "#/definitions/UserSummary"
+      members:
+        type: array
+        items:
+          $ref: "#/definitions/UserSummary"
+      projects:
+        type: array
+        items:
+          $ref: "#/definitions/ProjectSummary"
+
+  PaginationResponse:
+    type: object
+    properties:
+      limit:
+        type: integer
+        example: 10
+      offset:
+        type: integer
+        example: 0
+      total:
+        type: integer
+        example: 25
+
+  UserSummary:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: uint
+        example: 1
+      name:
+        type: string
+        example: "John Doe"
 
   ErrorResponse:
     type: object

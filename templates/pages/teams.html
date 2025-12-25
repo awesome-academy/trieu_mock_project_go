@@ -1,0 +1,74 @@
+{{define "pages/teams.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {{template "partials/head.html" .}}
+    <style>
+      .team-card {
+        border-radius: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    {{template "partials/navbar.html" .}}
+
+    <div class="container mt-5">
+      <div class="row mb-4">
+        <div class="col">
+          <h2>Teams List</h2>
+          <p class="text-muted">
+            Manage and view all teams in the organization.
+          </p>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12">
+          <div class="card shadow-sm team-card">
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th>ID</th>
+                      <th>Team Name</th>
+                      <th>Leader</th>
+                      <th>Members Count</th>
+                      <th>Projects Count</th>
+                      <th>Created At</th>
+                    </tr>
+                  </thead>
+                  <tbody id="teams-table-body">
+                    <tr>
+                      <td colspan="6" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                          <span class="visually-hidden">Loading...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Pagination -->
+              <nav aria-label="Teams pagination" class="mt-4">
+                <ul
+                  class="pagination justify-content-center"
+                  id="teams-pagination"
+                >
+                  <!-- Pagination items will be injected here -->
+                </ul>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {{template "partials/scripts.html" .}}
+    <script src="/static/js/services/team_service.js"></script>
+    <script src="/static/js/common/auth.js"></script>
+    <script src="/static/js/teams.js"></script>
+  </body>
+</html>
+{{end}}
