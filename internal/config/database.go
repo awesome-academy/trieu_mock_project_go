@@ -38,8 +38,9 @@ func ConnectToMySQL(dsn string) error {
 	}
 
 	// Set connection pool settings
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
+	dbConfig := LoadConfig().Database
+	sqlDB.SetMaxIdleConns(dbConfig.MaxIdleConns)
+	sqlDB.SetMaxOpenConns(dbConfig.MaxOpenConns)
 
 	log.Println("✅ Database connected successfully")
 	return nil

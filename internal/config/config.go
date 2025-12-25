@@ -21,12 +21,14 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
-	Driver   string
-	Host     string
-	Port     string
-	User     string
-	Password string
-	Database string
+	Driver       string
+	Host         string
+	Port         string
+	User         string
+	Password     string
+	Database     string
+	MaxIdleConns int
+	MaxOpenConns int
 }
 
 type SessionConfig struct {
@@ -54,18 +56,28 @@ func LoadConfig() *Config {
 		if err != nil {
 			sessionMaxAge = 3600
 		}
+		maxIdleConns, err := strconv.Atoi(getEnv("DB_MAX_IDLE_CONNS", "10"))
+		if err != nil {
+			maxIdleConns = 10
+		}
+		maxOpenConns, err := strconv.Atoi(getEnv("DB_MAX_OPEN_CONNS", "100"))
+		if err != nil {
+			maxOpenConns = 100
+		}
 		cfg = &Config{
 			Server: ServerConfig{
 				Host: getEnv("SERVER_HOST", "localhost"),
 				Port: getEnv("SERVER_PORT", "8080"),
 			},
 			Database: DatabaseConfig{
-				Driver:   getEnv("DB_DRIVER", "mysql"),
-				Host:     getEnv("DB_HOST", "localhost"),
-				Port:     getEnv("DB_PORT", "3306"),
-				User:     getEnv("DB_USER", "root"),
-				Password: getEnv("DB_PASSWORD", "password"),
-				Database: getEnv("DB_NAME", "trieu_mock_project_go"),
+				Driver:       getEnv("DB_DRIVER", "mysql"),
+				Host:         getEnv("DB_HOST", "localhost"),
+				Port:         getEnv("DB_PORT", "3306"),
+				User:         getEnv("DB_USER", "root"),
+				Password:     getEnv("DB_PASSWORD", "password"),
+				Database:     getEnv("DB_NAME", "trieu_mock_project_go"),
+				MaxIdleConns: maxIdleConns,
+				MaxOpenConns: maxOpenConns,
 			},
 			SessionConfig: SessionConfig{
 				Secret: getEnv("SESSION_SECRET", "trieu-mock-project-go-secret"),
