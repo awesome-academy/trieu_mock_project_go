@@ -10,15 +10,13 @@
 function checkAuth() {
   const token = localStorage.getItem("accessToken");
 
-  if (!token) {
-    // No token found, redirect to login
-    window.location.href = "/login";
+  if (!token || !verifyUser()) {
+    // No token found or user info missing, redirect to login
+    logout();
     return false;
   }
 
-  // Mock logic: verify user is authenticated
-  // In a real application, you might validate the token with the server
-  return verifyUser();
+  return true;
 }
 
 /**

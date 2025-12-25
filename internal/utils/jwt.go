@@ -9,13 +9,13 @@ import (
 )
 
 type JWTClaims struct {
-	UserID int64  `json:"user_id"`
+	UserID uint   `json:"user_id"`
 	Email  string `json:"email"`
 	jwt.RegisteredClaims
 }
 
 // GenerateJWTToken generates a JWT token with user claims
-func GenerateJWTToken(userID int64, email string) (string, error) {
+func GenerateJWTToken(userID uint, email string) (string, error) {
 	cfg := config.LoadConfig()
 
 	claims := JWTClaims{

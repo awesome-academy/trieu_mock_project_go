@@ -1,0 +1,161 @@
+{{define "pages/user_profile.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{.title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .profile-card {
+        border-radius: 15px;
+      }
+      .badge-skill {
+        font-size: 0.9rem;
+        padding: 0.5em 0.8em;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container">
+        <a class="navbar-brand" href="/">Mock Project</a>
+        <div class="collapse navbar-collapse">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="/">Dashboard</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/profile">Profile</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="javascript:void(0)" onclick="logout()"
+                >Logout</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container mt-5">
+      <div class="row">
+        <!-- Left Column: Basic Info & Skills -->
+        <div class="col-lg-4">
+          <div class="card mb-4 shadow-sm profile-card">
+            <div class="card-body text-center">
+              <img
+                src="https://ui-avatars.com/api/?name=User&background=random&size=150"
+                alt="avatar"
+                class="rounded-circle img-fluid mb-3"
+                style="width: 150px"
+              />
+              <h4 class="mb-1" id="profile-name-header">Loading...</h4>
+              <p class="text-muted mb-1" id="profile-position-header">
+                Loading...
+              </p>
+              <p class="text-muted mb-3" id="profile-team-header">Loading...</p>
+            </div>
+          </div>
+
+          <div class="card mb-4 shadow-sm profile-card">
+            <div class="card-body">
+              <h5 class="card-title border-bottom pb-2 mb-3">Skills</h5>
+              <div id="profile-skills" class="d-flex flex-wrap gap-2">
+                <div
+                  class="spinner-border spinner-border-sm text-primary"
+                  role="status"
+                >
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Detailed Info & Projects -->
+        <div class="col-lg-8">
+          <div class="card mb-4 shadow-sm profile-card">
+            <div class="card-body">
+              <h5 class="card-title border-bottom pb-2 mb-3">
+                Basic Information
+              </h5>
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Full Name</div>
+                <div class="col-sm-8 text-secondary" id="info-name">
+                  Loading...
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Email</div>
+                <div class="col-sm-8 text-secondary" id="info-email">
+                  Loading...
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Birthday</div>
+                <div class="col-sm-8 text-secondary" id="info-birthday">
+                  Loading...
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Current Team</div>
+                <div class="col-sm-8 text-secondary" id="info-team">
+                  Loading...
+                </div>
+              </div>
+              <div class="row mb-0">
+                <div class="col-sm-4 fw-bold">Position</div>
+                <div class="col-sm-8 text-secondary" id="info-position">
+                  Loading...
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-4 shadow-sm profile-card">
+            <div class="card-body">
+              <h5 class="card-title border-bottom pb-2 mb-3">
+                Projects Joined
+              </h5>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Project Name</th>
+                      <th>Abbr</th>
+                      <th>Start Date</th>
+                      <th>End Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="profile-projects">
+                    <tr>
+                      <td colspan="4" class="text-center">
+                        <div
+                          class="spinner-border spinner-border-sm text-primary"
+                          role="status"
+                        >
+                          <span class="visually-hidden">Loading...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/common/auth.js"></script>
+    <script src="/static/js/user_profile.js"></script>
+  </body>
+</html>
+{{end}}

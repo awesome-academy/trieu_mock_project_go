@@ -62,9 +62,7 @@ $(document).ready(function () {
       $successAlert.removeClass("d-none");
 
       // Redirect to dashboard after 1.5 seconds
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 1500);
+      window.location.href = "/";
     } catch (error) {
       // Show error message
       const errorMsg =
