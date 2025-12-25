@@ -28,7 +28,7 @@ func (h *AdminAuthHandler) AdminLogin(c *gin.Context) {
 
 	user, err := h.authService.Login(c.Request.Context(), email, password)
 	if err != nil || user.Role != "admin" {
-		c.HTML(http.StatusUnauthorized, "pages/login.html", gin.H{
+		c.HTML(http.StatusUnauthorized, "pages/admin_login.html", gin.H{
 			"title": "Admin Login",
 			"error": "Invalid email or password, or not an admin",
 		})
@@ -39,7 +39,7 @@ func (h *AdminAuthHandler) AdminLogin(c *gin.Context) {
 	session.Set("user_id", user.ID)
 	session.Set("role", user.Role)
 	if err := session.Save(); err != nil {
-		c.HTML(http.StatusInternalServerError, "pages/login.html", gin.H{
+		c.HTML(http.StatusInternalServerError, "pages/admin_login.html", gin.H{
 			"title": "Admin Login",
 			"error": "Failed to save session",
 		})
@@ -53,7 +53,7 @@ func (h *AdminAuthHandler) AdminLogout(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Clear()
 	if err := session.Save(); err != nil {
-		c.HTML(http.StatusInternalServerError, "pages/login.html", gin.H{
+		c.HTML(http.StatusInternalServerError, "pages/admin_login.html", gin.H{
 			"title": "Admin Login",
 			"error": "Failed to save session",
 		})
