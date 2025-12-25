@@ -60,10 +60,11 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 		if session.Get("user_id") == nil {
 			if c.GetHeader("HX-Request") == "true" {
 				c.Header("HX-Redirect", "/admin/login")
+				c.Abort()
 			} else {
 				c.Redirect(302, "/admin/login")
+				c.Abort()
 			}
-			c.Abort()
 			return
 		}
 		role := session.Get("role")

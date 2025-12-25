@@ -47,7 +47,6 @@ CREATE TABLE IF NOT EXISTS `team_members` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT `fk_team_members_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_team_members_team_id` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  UNIQUE KEY `uix_team_members_user_team` (`user_id`, `team_id`),
   KEY `idx_team_members_team_id` (`team_id`)
 );
 
@@ -105,10 +104,10 @@ CREATE TABLE IF NOT EXISTS `project_members` (
 CREATE TABLE IF NOT EXISTS `activity_logs` (
   `id` int unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `action` varchar(255) NOT NULL,
-  `user_id` int unsigned NULL,
+  `user_id` int unsigned NOT NULL,
   `description` text NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT `fk_activity_logs_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_activity_logs_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   KEY `idx_activity_logs_user_id` (`user_id`),
   KEY `idx_activity_logs_created_at` (`created_at`)
 );

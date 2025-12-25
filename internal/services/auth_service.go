@@ -2,11 +2,11 @@ package services
 
 import (
 	"context"
-	"crypto/sha256"
-	"fmt"
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/repositories"
 	"trieu_mock_project_go/models"
+
+	"golang.org/x/crypto/bcrypt"
 
 	"gorm.io/gorm"
 )
@@ -38,7 +38,6 @@ func (s *AuthService) Login(c context.Context, email, password string) (*models.
 }
 
 func (s *AuthService) VerifyPassword(plainPassword, hashedPassword string) bool {
-	hash := sha256.Sum256([]byte(plainPassword))
-	hashString := fmt.Sprintf("%x", hash)
-	return hashString == hashedPassword
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(plainPassword))
+	return err == nil
 }

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"path/filepath"
 
@@ -27,15 +28,13 @@ func ConnectToMySQL(dsn string) error {
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
-		return err
+		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 
 	// Configure connection pool
 	sqlDB, err := DB.DB()
 	if err != nil {
-		log.Fatalf("Failed to get database instance: %v", err)
-		return err
+		return fmt.Errorf("failed to get database instance: %w", err)
 	}
 
 	// Set connection pool settings
@@ -50,20 +49,17 @@ func ConnectToMySQL(dsn string) error {
 func RunMigrations() error {
 	sqlDB, err := DB.DB()
 	if err != nil {
-		log.Fatalf("Failed to get database instance: %v", err)
-		return err
+		return fmt.Errorf("Failed to get database instance: %w", err)
 	}
 
 	driver, err := mysqlmigrate.WithInstance(sqlDB, &mysqlmigrate.Config{})
 	if err != nil {
-		log.Fatalf("Failed to create MySQL driver: %v", err)
-		return err
+		return fmt.Errorf("Failed to create MySQL driver: %w", err)
 	}
 
 	migrationsPath, err := filepath.Abs("migrations")
 	if err != nil {
-		log.Fatalf("Failed to get migrations path: %v", err)
-		return err
+		return fmt.Errorf("Failed to get migrations path: %w", err)
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
@@ -72,13 +68,11 @@ func RunMigrations() error {
 		driver,
 	)
 	if err != nil {
-		log.Fatalf("Failed to initialize migrations: %v", err)
-		return err
+		return fmt.Errorf("Failed to initialize migrations: %w", err)
 	}
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Fatalf("Failed to apply migrations: %v", err)
-		return err
+		return fmt.Errorf("Failed to apply migrations: %w", err)
 	}
 
 	log.Println("Migrations applied successfully")

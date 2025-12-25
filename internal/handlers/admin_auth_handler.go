@@ -38,7 +38,13 @@ func (h *AdminAuthHandler) AdminLogin(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Set("user_id", user.ID)
 	session.Set("role", user.Role)
-	session.Save()
+	if err := session.Save(); err != nil {
+		c.HTML(http.StatusInternalServerError, "pages/login.html", gin.H{
+			"title": "Admin Login",
+			"error": "Failed to save session",
+		})
+		return
+	}
 
 	c.Redirect(http.StatusSeeOther, "/admin")
 }
@@ -46,6 +52,12 @@ func (h *AdminAuthHandler) AdminLogin(c *gin.Context) {
 func (h *AdminAuthHandler) AdminLogout(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Clear()
-	session.Save()
+	if err := session.Save(); err != nil {
+		c.HTML(http.StatusInternalServerError, "pages/login.html", gin.H{
+			"title": "Admin Login",
+			"error": "Failed to save session",
+		})
+		return
+	}
 	c.Redirect(http.StatusSeeOther, "/login")
 }

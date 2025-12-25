@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"trieu_mock_project_go/internal/bootstrap"
 	"trieu_mock_project_go/internal/config"
 	"trieu_mock_project_go/internal/routes"
@@ -28,13 +29,15 @@ func main() {
 
 	router.Static("/static", "./static")
 
-	store := cookie.NewStore([]byte(cfg.AppSecret))
+	store := cookie.NewStore([]byte(cfg.SessionConfig.Secret))
 	store.Options(sessions.Options{
 		Path:     "/",
-		MaxAge:   3600,
+		MaxAge:   cfg.SessionConfig.MaxAge,
 		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   cfg.SessionConfig.Secure,
 	})
-	router.Use(sessions.Sessions("mysession", store))
+	router.Use(sessions.Sessions("trieu_mock_project_session", store))
 
 	// Initialize app container
 	appContainer := bootstrap.NewAppContainer()

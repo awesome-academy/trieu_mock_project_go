@@ -2,16 +2,17 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"sync"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	Server    ServerConfig
-	Database  DatabaseConfig
-	AppSecret string
-	JWT       JWTConfig
+	Server        ServerConfig
+	Database      DatabaseConfig
+	SessionConfig SessionConfig
+	JWT           JWTConfig
 }
 
 type ServerConfig struct {
@@ -26,6 +27,12 @@ type DatabaseConfig struct {
 	User     string
 	Password string
 	Database string
+}
+
+type SessionConfig struct {
+	Secret string
+	MaxAge int
+	Secure bool
 }
 
 type JWTConfig struct {
@@ -43,6 +50,10 @@ func LoadConfig() *Config {
 		// Load .env file
 		godotenv.Load()
 
+		sessionMaxAge, err := strconv.Atoi(getEnv("SESSION_MAX_AGE", "3600"))
+		if err != nil {
+			sessionMaxAge = 3600
+		}
 		cfg = &Config{
 			Server: ServerConfig{
 				Host: getEnv("SERVER_HOST", "localhost"),
@@ -56,7 +67,11 @@ func LoadConfig() *Config {
 				Password: getEnv("DB_PASSWORD", "password"),
 				Database: getEnv("DB_NAME", "trieu_mock_project_go"),
 			},
-			AppSecret: getEnv("SESSION_SECRET", "trieu-mock-project-go-secret"),
+			SessionConfig: SessionConfig{
+				Secret: getEnv("SESSION_SECRET", "trieu-mock-project-go-secret"),
+				MaxAge: sessionMaxAge,
+				Secure: getEnv("SESSION_SECURE", "false") == "true",
+			},
 			JWT: JWTConfig{
 				Secret: getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
 			},
