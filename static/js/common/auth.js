@@ -1,5 +1,6 @@
 /**
  * Common authentication check utility
+ * This file acts as a bridge between the legacy global functions and the new AuthService
  */
 
 /**
@@ -8,36 +9,15 @@
  * @returns {boolean} true if user is authenticated, false otherwise
  */
 function checkAuth() {
-  const token = localStorage.getItem("accessToken");
-
-  if (!token || !verifyUser()) {
-    // No token found or user info missing, redirect to login
-    logout();
-    return false;
-  }
-
-  return true;
+  return AuthService.checkAuthAndRedirect();
 }
 
 /**
- * Verify user is valid (mock implementation)
+ * Verify user is valid
  * @returns {boolean} true if user is valid
  */
 function verifyUser() {
-  // Mock logic - return true for now
-  // In a real application, you could:
-  // - Validate JWT expiry
-  // - Call API to verify token
-  // - Check user data in localStorage
-
-  const userEmail = localStorage.getItem("userEmail");
-  const userId = localStorage.getItem("userId");
-
-  if (!userEmail || !userId) {
-    return false;
-  }
-
-  return true;
+  return AuthService.isAuthenticated();
 }
 
 /**
@@ -45,7 +25,7 @@ function verifyUser() {
  * @returns {string|null} the access token or null if not found
  */
 function getAccessToken() {
-  return localStorage.getItem("accessToken");
+  return AuthService.getToken();
 }
 
 /**
@@ -53,11 +33,7 @@ function getAccessToken() {
  * @returns {Object} user object with id, email, and name
  */
 function getUserInfo() {
-  return {
-    id: localStorage.getItem("userId"),
-    email: localStorage.getItem("userEmail"),
-    name: localStorage.getItem("userName"),
-  };
+  return AuthService.getUser();
 }
 
 /**
@@ -65,11 +41,7 @@ function getUserInfo() {
  * Clear all user data from localStorage and redirect to login
  */
 function logout() {
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("userEmail");
-  localStorage.removeItem("userName");
-  localStorage.removeItem("userId");
-  window.location.href = "/login";
+  AuthService.logout();
 }
 
 /**
@@ -78,8 +50,13 @@ function logout() {
  */
 function initAuthCheck() {
   $(document).ready(function () {
-    checkAuth();
+    // Only run checkAuth if we are not on the login page
+    const path = window.location.pathname;
+    if (path !== "/login" && path !== "/admin/login") {
+      checkAuth();
+    }
   });
 }
 
+// Initialize auth check
 initAuthCheck();
