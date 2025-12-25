@@ -4,6 +4,7 @@ import (
 	"context"
 	"trieu_mock_project_go/internal/dtos"
 	"trieu_mock_project_go/internal/repositories"
+	"trieu_mock_project_go/types"
 
 	"gorm.io/gorm"
 )
@@ -58,7 +59,7 @@ func (s *UserService) GetUserProfile(c context.Context, id uint) (*dtos.UserProf
 		ID:          user.ID,
 		Name:        user.Name,
 		Email:       user.Email,
-		Birthday:    user.Birthday,
+		Birthday:    &types.Date{Time: *user.Birthday},
 		CurrentTeam: &currentTeam,
 		Position: dtos.Position{
 			ID:           user.Position.ID,

@@ -138,8 +138,8 @@ definitions:
         example: "user@example.com"
       birthday:
         type: string
-        format: date-time
-        example: "1990-01-15T00:00:00Z"
+        format: date
+        example: "1990-01-15"
       current_team:
         $ref: "#/definitions/TeamSummary"
       position:
