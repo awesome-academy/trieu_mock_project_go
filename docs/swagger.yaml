@@ -45,9 +45,9 @@ paths:
           schema:
             $ref: "#/definitions/LoginResponse"
         400:
-          description: Invalid request body
+          description: Validation failed
           schema:
-            $ref: "#/definitions/ErrorResponse"
+            $ref: "#/definitions/ValidationErrorResponse"
         401:
           description: Invalid email or password
           schema:
@@ -71,6 +71,39 @@ paths:
           description: User profile retrieved successfully
           schema:
             $ref: "#/definitions/UserProfile"
+        401:
+          description: Unauthorized access
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/profile/{userId}:
+    get:
+      summary: Get Specific User Profile
+      description: Retrieve profile information for a specific user
+      operationId: getSpecificUserProfile
+      tags:
+        - Profile
+      security:
+        - Bearer: []
+      parameters:
+        - in: path
+          name: userId
+          description: ID of the user to retrieve
+          required: true
+          type: integer
+      responses:
+        200:
+          description: User profile retrieved successfully
+          schema:
+            $ref: "#/definitions/UserProfile"
+        400:
+          description: Invalid user ID
+          schema:
+            $ref: "#/definitions/ErrorResponse"
         401:
           description: Unauthorized access
           schema:
@@ -111,9 +144,90 @@ paths:
           schema:
             $ref: "#/definitions/ListTeamsResponse"
         400:
-          description: Invalid query parameters
+          description: Validation failed
+          schema:
+            $ref: "#/definitions/ValidationErrorResponse"
+        401:
+          description: Unauthorized access
           schema:
             $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/teams/{id}:
+    get:
+      summary: Get Team Details
+      description: Retrieve detailed information about a specific team
+      operationId: getTeamDetails
+      tags:
+        - Teams
+      security:
+        - Bearer: []
+      parameters:
+        - in: path
+          name: id
+          description: ID of the team to retrieve
+          required: true
+          type: integer
+      responses:
+        200:
+          description: Team details retrieved successfully
+          schema:
+            $ref: "#/definitions/TeamDetail"
+        400:
+          description: Invalid team ID
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized access
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/teams/{id}/members:
+    get:
+      summary: List Team Members
+      description: Retrieve a paginated list of members in a specific team
+      operationId: listTeamMembers
+      tags:
+        - Teams
+      security:
+        - Bearer: []
+      parameters:
+        - in: path
+          name: id
+          description: ID of the team
+          required: true
+          type: integer
+        - in: query
+          name: limit
+          description: Number of members to retrieve (max 100)
+          required: false
+          type: integer
+          default: 10
+          minimum: 1
+          maximum: 100
+        - in: query
+          name: offset
+          description: Number of members to skip for pagination
+          required: false
+          type: integer
+          default: 0
+          minimum: 0
+      responses:
+        200:
+          description: Team members retrieved successfully
+          schema:
+            $ref: "#/definitions/ListTeamMembersResponse"
+        400:
+          description: Validation failed
+          schema:
+            $ref: "#/definitions/ValidationErrorResponse"
         401:
           description: Unauthorized access
           schema:
@@ -264,6 +378,35 @@ definitions:
       page:
         $ref: "#/definitions/PaginationResponse"
 
+  ListTeamMembersResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          $ref: "#/definitions/TeamMemberSummary"
+      page:
+        $ref: "#/definitions/PaginationResponse"
+
+  TeamMemberSummary:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: uint
+        example: 1
+      name:
+        type: string
+        example: "John Doe"
+      email:
+        type: string
+        format: email
+        example: "user@example.com"
+      joined_at:
+        type: string
+        format: date-time
+        example: "2024-01-01T00:00:00Z"
+
   TeamDetail:
     type: object
     properties:
@@ -323,6 +466,25 @@ definitions:
   ErrorResponse:
     type: object
     properties:
-      error:
+      code:
+        type: integer
+        example: 500
+      message:
         type: string
-        example: "Invalid email or password"
+        example: "Error message describing the issue"
+
+  ValidationErrorResponse:
+    type: object
+    properties:
+      code:
+        type: integer
+        example: 400
+      message:
+        type: string
+        example: "Validation failed"
+      details:
+        type: object
+        description: "Field-specific validation errors"
+        example:
+          email: "must be a valid email"
+          password: "is required"

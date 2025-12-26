@@ -11,15 +11,20 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 	router.GET("/login", appContainer.AuthHandler.ShowLoginPage)
 	router.POST("/login", appContainer.AuthHandler.UserLogin)
 	router.GET("/", appContainer.DashboardHandler.DashboardPageHandler)
-	router.GET("/profile", appContainer.UserProfileHandler.UserProfilePageHandler)
+	router.GET("/profile", appContainer.UserProfileHandler.UserMyProfilePageHandler)
+	router.GET("/profile/:userId", appContainer.UserProfileHandler.UserUserProfilePageHandler)
 	router.GET("/teams", appContainer.TeamsHandler.TeamsPageHandler)
+	router.GET("/teams/:id", appContainer.TeamsHandler.TeamDetailsPageHandler)
 
 	// Normal user routes (JWT)
 	apiGroup := router.Group("/api")
 	apiGroup.Use(appContainer.JWTAuthMiddleware)
 	{
-		apiGroup.GET("/profile", appContainer.UserProfileHandler.GetUserProfile)
+		apiGroup.GET("/profile", appContainer.UserProfileHandler.GetMyProfile)
+		apiGroup.GET("/profile/:userId", appContainer.UserProfileHandler.GetUserProfile)
 		apiGroup.GET("/teams", appContainer.TeamsHandler.ListTeams)
+		apiGroup.GET("/teams/:id", appContainer.TeamsHandler.GetTeamDetails)
+		apiGroup.GET("/teams/:id/members", appContainer.TeamsHandler.GetTeamMembers)
 	}
 
 	// Admin login flow

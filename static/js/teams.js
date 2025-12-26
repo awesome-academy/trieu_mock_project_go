@@ -42,7 +42,7 @@ function updateTeamsTable(teams) {
   teams.forEach((team) => {
     const createdAt = new Date(team.created_at).toLocaleDateString();
     html += `
-      <tr>
+      <tr class="team-row" onclick="goToTeamDetails(${team.id})">
         <td>${team.id}</td>
         <td class="fw-bold">${team.name}</td>
         <td>${team.leader ? team.leader.name : "N/A"}</td>
@@ -57,6 +57,14 @@ function updateTeamsTable(teams) {
     `;
   });
   tbody.html(html);
+}
+
+/**
+ * Redirect to team details page
+ * @param {number} teamId
+ */
+function goToTeamDetails(teamId) {
+  window.location.href = `/teams/${teamId}`;
 }
 
 /**
