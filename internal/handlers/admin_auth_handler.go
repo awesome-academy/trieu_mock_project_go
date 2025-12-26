@@ -59,5 +59,5 @@ func (h *AdminAuthHandler) AdminLogout(c *gin.Context) {
 		})
 		return
 	}
-	c.Redirect(http.StatusSeeOther, "/login")
+	c.Redirect(http.StatusSeeOther, "/admin/login")
 }

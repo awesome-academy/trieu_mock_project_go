@@ -35,3 +35,30 @@ func (r *UserRepository) FindByID(db *gorm.DB, id uint) (*models.User, error) {
 	}
 	return &user, nil
 }
+
+func (r *UserRepository) SearchUsers(db *gorm.DB, teamId *uint, limit, offset int) ([]models.User, int64, error) {
+	var users []models.User
+	query := db.Model(&models.User{})
+
+	result := query
+
+	if teamId != nil {
+		result = result.Where("current_team_id = ?", *teamId)
+	}
+
+	var count int64
+	result = result.Count(&count)
+	if result.Error != nil {
+		return nil, 0, result.Error
+	}
+
+	result = result.
+		Limit(limit).
+		Offset(offset).
+		Find(&users)
+
+	if result.Error != nil {
+		return nil, 0, result.Error
+	}
+	return users, count, nil
+}

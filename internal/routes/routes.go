@@ -37,5 +37,8 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 	adminGroup.Use(appContainer.AdminAuthMiddleware)
 	{
 		adminGroup.GET("/", appContainer.AdminDashboardHandler.AdminDashboardPage)
+		adminGroup.GET("/users", appContainer.AdminUserHandler.AdminUsersPage)
+		adminGroup.GET("/users/partial/search", appContainer.AdminUserHandler.AdminUsersSearchPartial)
+		adminGroup.GET("/users/:userId", appContainer.AdminUserHandler.AdminUserDetailPage)
 	}
 }

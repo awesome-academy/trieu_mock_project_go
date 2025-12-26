@@ -72,3 +72,34 @@ func (s *UserService) GetUserProfile(c context.Context, id uint) (*dtos.UserProf
 
 	return userProfile, nil
 }
+
+func (s *UserService) SearchUsers(c context.Context, teamId *uint, limit, offset int) (*dtos.UserSearchResponse, error) {
+	users, totalCount, err := s.userRepository.SearchUsers(s.db.WithContext(c), teamId, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	userDtos := make([]dtos.UserDataForSearch, 0, len(users))
+	if len(users) > 0 {
+		for _, user := range users {
+			userDtos = append(
+				userDtos,
+				dtos.UserDataForSearch{
+					ID:    user.ID,
+					Name:  user.Name,
+					Email: user.Email,
+				})
+		}
+	}
+
+	response := &dtos.UserSearchResponse{
+		Users: userDtos,
+		Page: dtos.PaginationResponse{
+			Limit:  limit,
+			Offset: offset,
+			Total:  totalCount,
+		},
+	}
+
+	return response, nil
+}

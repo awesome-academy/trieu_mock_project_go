@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"trieu_mock_project_go/internal/bootstrap"
@@ -24,6 +25,20 @@ func main() {
 
 	// Create Gin router
 	router := gin.Default()
+
+	router.SetFuncMap(template.FuncMap{
+		"add": func(a, b int) int { return a + b },
+		"sub": func(a, b int) int { return a - b },
+		"min": func(a, b int64) int64 {
+			if a < b {
+				return a
+			}
+			return b
+		},
+		"int64": func(v int) int64 {
+			return int64(v)
+		},
+	})
 
 	router.LoadHTMLGlob("templates/**/*")
 

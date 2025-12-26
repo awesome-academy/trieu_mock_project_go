@@ -16,8 +16,8 @@ type AppContainer struct {
 	JWTAuthMiddleware   gin.HandlerFunc
 
 	// Services
-	AuthService *services.AuthService
-	UserService *services.UserService
+	AuthService  *services.AuthService
+	UserService  *services.UserService
 	TeamsService *services.TeamsService
 
 	// Handlers
@@ -28,6 +28,7 @@ type AppContainer struct {
 	// Admin Handlers
 	AdminAuthHandler      *handlers.AdminAuthHandler
 	AdminDashboardHandler *handlers.AdminDashboardHandler
+	AdminUserHandler      *handlers.AdminUserHandler
 }
 
 func NewAppContainer() *AppContainer {
@@ -47,8 +48,8 @@ func NewAppContainer() *AppContainer {
 		AdminAuthMiddleware: middlewares.AdminAuthMiddleware(),
 
 		// Services
-		AuthService: authService,
-		UserService: userService,
+		AuthService:  authService,
+		UserService:  userService,
 		TeamsService: teamsService,
 
 		// Handlers
@@ -58,6 +59,7 @@ func NewAppContainer() *AppContainer {
 		TeamsHandler:       handlers.NewTeamsHandler(teamsService),
 		// Admin Handlers
 		AdminAuthHandler:      handlers.NewAdminAuthHandler(authService),
-		AdminDashboardHandler: handlers.NewAdminDashboardHandler(),
+		AdminDashboardHandler: handlers.NewAdminDashboardHandler(userService),
+		AdminUserHandler:      handlers.NewAdminUserHandler(userService, teamsService),
 	}
 }
