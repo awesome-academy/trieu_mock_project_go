@@ -65,7 +65,7 @@ func (s *UserService) SearchUsers(c context.Context, teamId *uint, limit, offset
 
 func (s *UserService) CreateUser(c context.Context, req dtos.CreateOrUpdateUserRequest) error {
 	existedUser, err := s.userRepository.FindByEmail(s.db.WithContext(c), req.Email)
-	if err != nil {
+	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
 	if existedUser != nil {
