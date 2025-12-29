@@ -13,6 +13,8 @@ $(document).ready(function () {
  */
 async function loadTeams(offset) {
   try {
+    showLoadingTeams();
+
     const response = await TeamService.listTeams(limit, offset);
     updateTeamsTable(response.teams);
     updatePagination(response.page);
@@ -113,4 +115,15 @@ function updatePagination(pageInfo) {
   `;
 
   pagination.html(html);
+}
+function showLoadingTeams() {
+  $("#teams-table-body").html(`
+      <tr>
+        <td colspan="6" class="text-center">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </td>
+      </tr>
+    `);
 }

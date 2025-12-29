@@ -93,6 +93,8 @@ function updateProjectsList(projects) {
  */
 async function loadTeamMembers(offset) {
   try {
+    showLoadingTeamMembers();
+
     const response = await TeamService.getTeamMembers(teamId, limit, offset);
     updateMembersTable(response.members);
     updatePagination(response.page);
@@ -189,4 +191,16 @@ function updatePagination(pageInfo) {
   `;
 
   pagination.html(html);
+}
+
+function showLoadingTeamMembers() {
+  $("#members-table-body").html(`
+      <tr>
+        <td colspan="4" class="text-center">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </td>
+      </tr>
+    `);
 }
