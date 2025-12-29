@@ -4,28 +4,27 @@ document.addEventListener("DOMContentLoaded", function () {
   const userListContainer = document.getElementById("userListContainer");
   const loadingTemplate = document.getElementById("loadingTemplate");
 
-  function loadUsers(offset = 0) {
+  async function loadUsers(offset = 0) {
     const teamId = teamFilter.value;
     const limit = 10;
-    let url = `/admin/users/partial/search?limit=${limit}&offset=${offset}`;
-    if (teamId) {
-      url += `&team_id=${teamId}`;
-    }
 
     // Show loading spinner
     userListContainer.innerHTML = loadingTemplate.innerHTML;
 
-    fetch(url)
-      .then((response) => response.text())
-      .then((html) => {
-        userListContainer.innerHTML = html;
-        attachPaginationEvents();
-      })
-      .catch((error) => {
-        console.error("Error loading users:", error);
-        userListContainer.innerHTML =
-          '<div class="alert alert-danger">Failed to load users.</div>';
+    try {
+      const html = await AdminUserService.searchUsers({
+        limit,
+        offset,
+        team_id: teamId,
       });
+      userListContainer.innerHTML = html;
+      attachPaginationEvents();
+    } catch (error) {
+      console.error("Error loading users:", error);
+      Toast.error("Failed to load users list");
+      userListContainer.innerHTML =
+        '<div class="alert alert-danger">Failed to load users.</div>';
+    }
   }
 
   function attachPaginationEvents() {
@@ -41,13 +40,8 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  searchBtn.addEventListener("click", function () {
-    loadUsers(0);
-  });
-
-  teamFilter.addEventListener("change", function () {
-    loadUsers(0);
-  });
+  searchBtn.addEventListener("click", () => loadUsers(0));
+  teamFilter.addEventListener("change", () => loadUsers(0));
 
   // Initial load
   loadUsers(0);

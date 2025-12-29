@@ -7,28 +7,22 @@ document.addEventListener("DOMContentLoaded", function () {
       const userName = this.dataset.userName;
 
       if (
-        confirm(
+        !confirm(
           `Are you sure you want to delete user "${userName}"? This action cannot be undone.`
         )
       ) {
-        try {
-          const response = await fetch(`/admin/users/${userId}`, {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
+        return;
+      }
 
-          if (response.ok) {
-            window.location.href = "/admin/users";
-          } else {
-            const err = await response.json();
-            alert("Error: " + (err.error || "Failed to delete user"));
-          }
-        } catch (error) {
-          console.error("Error deleting user:", error);
-          alert("An error occurred while deleting the user.");
-        }
+      try {
+        const response = await AdminUserService.deleteUser(userId);
+        Toast.success(response.message || "User deleted successfully");
+        setTimeout(() => {
+          window.location.href = "/admin/users";
+        }, 1500);
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        Toast.error(error.message || "Failed to delete user");
       }
     });
   }
