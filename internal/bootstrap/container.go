@@ -32,6 +32,7 @@ type AppContainer struct {
 	AdminAuthHandler      *handlers.AdminAuthHandler
 	AdminDashboardHandler *handlers.AdminDashboardHandler
 	AdminUserHandler      *handlers.AdminUserHandler
+	AdminPositionHandler  *handlers.AdminPositionHandler
 }
 
 func NewAppContainer() *AppContainer {
@@ -73,5 +74,6 @@ func NewAppContainer() *AppContainer {
 		AdminAuthHandler:      handlers.NewAdminAuthHandler(authService),
 		AdminDashboardHandler: handlers.NewAdminDashboardHandler(userService),
 		AdminUserHandler:      handlers.NewAdminUserHandler(userService, teamsService, positionService, skillService),
+		AdminPositionHandler:  handlers.NewAdminPositionHandler(positionService),
 	}
 }

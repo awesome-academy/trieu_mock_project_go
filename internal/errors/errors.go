@@ -19,6 +19,7 @@ var (
 	ErrUnexpectedSigningMethod = errors.New("unexpected signing method")
 	ErrEmailAlreadyExists      = errors.New("email already exists")
 	ErrUserNotFound            = errors.New("user not found")
+	ErrPositionAlreadyExists   = errors.New("position with name already exists")
 )
 
 // Error response
