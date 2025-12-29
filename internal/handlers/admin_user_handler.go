@@ -10,14 +10,22 @@ import (
 )
 
 type AdminUserHandler struct {
-	userService *services.UserService
-	teamService *services.TeamsService
+	userService     *services.UserService
+	teamService     *services.TeamsService
+	positionService *services.PositionService
+	skillService    *services.SkillService
 }
 
-func NewAdminUserHandler(userService *services.UserService, teamService *services.TeamsService) *AdminUserHandler {
+func NewAdminUserHandler(
+	userService *services.UserService,
+	teamService *services.TeamsService,
+	positionService *services.PositionService,
+	skillService *services.SkillService) *AdminUserHandler {
 	return &AdminUserHandler{
-		userService: userService,
-		teamService: teamService,
+		userService:     userService,
+		teamService:     teamService,
+		positionService: positionService,
+		skillService:    skillService,
 	}
 }
 
@@ -77,4 +85,60 @@ func (h *AdminUserHandler) AdminUserDetailPage(c *gin.Context) {
 		"title": "User Detail",
 		"user":  userProfile,
 	})
+}
+
+func (h *AdminUserHandler) AdminUserEditPage(c *gin.Context) {
+	userIdParam := c.Param("userId")
+
+	userId, err := strconv.Atoi(userIdParam)
+	if err != nil {
+		c.HTML(http.StatusBadRequest, "pages/admin_user_edit.html", gin.H{
+			"title": "Edit User",
+			"error": "Invalid user ID",
+		})
+		return
+	}
+
+	userProfile, err := h.userService.GetUserProfile(c.Request.Context(), uint(userId))
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "pages/admin_user_edit.html", gin.H{
+			"title": "Edit User",
+			"error": "Failed to load user details",
+		})
+		return
+	}
+
+	allTeam := h.teamService.GetAllTeamsSummary(c.Request.Context())
+	positions := h.positionService.GetAllPositionsSummary(c.Request.Context())
+	skills := h.skillService.GetAllSkillsSummary(c.Request.Context())
+
+	c.HTML(http.StatusOK, "pages/admin_user_edit.html", gin.H{
+		"title":     "Edit User",
+		"user":      userProfile,
+		"teams":     allTeam,
+		"positions": positions,
+		"skills":    skills,
+	})
+}
+
+func (h *AdminUserHandler) UpdateUser(c *gin.Context) {
+	userIdParam := c.Param("userId")
+	userId, err := strconv.Atoi(userIdParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	var req dtos.UpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.userService.UpdateUser(c.Request.Context(), uint(userId), req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
 }

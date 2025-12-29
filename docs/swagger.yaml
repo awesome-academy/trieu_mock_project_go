@@ -367,6 +367,12 @@ definitions:
       name:
         type: string
         example: "Go Programming"
+      level:
+        type: integer
+        example: 4
+      used_year_number:
+        type: integer
+        example: 3
 
   ListTeamsResponse:
     type: object

@@ -38,6 +38,13 @@ func main() {
 		"int64": func(v int) int64 {
 			return int64(v)
 		},
+		"iterate": func(start, end int) []int {
+			var items []int
+			for i := start; i <= end; i++ {
+				items = append(items, i)
+			}
+			return items
+		},
 	})
 
 	router.LoadHTMLGlob("templates/**/*")

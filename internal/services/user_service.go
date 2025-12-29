@@ -2,8 +2,10 @@ package services
 
 import (
 	"context"
+	"time"
 	"trieu_mock_project_go/internal/dtos"
 	"trieu_mock_project_go/internal/repositories"
+	"trieu_mock_project_go/models"
 	"trieu_mock_project_go/types"
 
 	"gorm.io/gorm"
@@ -24,9 +26,9 @@ func (s *UserService) GetUserProfile(c context.Context, id uint) (*dtos.UserProf
 		return nil, err
 	}
 
-	var currentTeam dtos.TeamSummary
+	var currentTeam dtos.PositionSummary
 	if user.CurrentTeam != nil {
-		currentTeam = dtos.TeamSummary{
+		currentTeam = dtos.PositionSummary{
 			ID:   user.CurrentTeam.ID,
 			Name: user.CurrentTeam.Name,
 		}
@@ -45,12 +47,14 @@ func (s *UserService) GetUserProfile(c context.Context, id uint) (*dtos.UserProf
 		}
 	}
 
-	skills := make([]dtos.UserSkillSummary, 0)
-	if len(user.Skills) > 0 {
-		for _, skill := range user.Skills {
-			skills = append(skills, dtos.UserSkillSummary{
-				ID:   skill.ID,
-				Name: skill.Name,
+	userSkills := make([]dtos.UserSkillSummary, 0)
+	if len(user.UserSkill) > 0 {
+		for _, skill := range user.UserSkill {
+			userSkills = append(userSkills, dtos.UserSkillSummary{
+				ID:             skill.Skill.ID,
+				Name:           skill.Skill.Name,
+				Level:          skill.Level,
+				UsedYearNumber: skill.UsedYearNumber,
 			})
 		}
 	}
@@ -67,7 +71,7 @@ func (s *UserService) GetUserProfile(c context.Context, id uint) (*dtos.UserProf
 			Abbreviation: user.Position.Abbreviation,
 		},
 		Projects: projects,
-		Skills:   skills,
+		Skills:   userSkills,
 	}
 
 	return userProfile, nil
@@ -102,4 +106,32 @@ func (s *UserService) SearchUsers(c context.Context, teamId *uint, limit, offset
 	}
 
 	return response, nil
+}
+
+func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.UpdateUserRequest) error {
+	var birthday *time.Time
+	if req.Birthday != nil && !req.Birthday.Time.IsZero() {
+		birthday = &req.Birthday.Time
+	}
+
+	user := &models.User{
+		ID:            id,
+		Name:          req.Name,
+		Email:         req.Email,
+		Birthday:      birthday,
+		PositionID:    req.PositionID,
+		CurrentTeamID: req.TeamID,
+	}
+
+	userSkills := make([]models.UserSkill, 0, len(req.Skills))
+	for _, sReq := range req.Skills {
+		userSkills = append(userSkills, models.UserSkill{
+			UserID:         id,
+			SkillID:        sReq.ID,
+			Level:          sReq.Level,
+			UsedYearNumber: sReq.UsedYearNumber,
+		})
+	}
+
+	return s.userRepository.UpdateUser(s.db.WithContext(c), user, userSkills)
 }

@@ -66,9 +66,12 @@
                 {{end}}
               </p>
               <div class="d-grid gap-2">
-                <button class="btn btn-outline-primary" type="button">
+                <a
+                  href="/admin/users/{{.user.ID}}/edit"
+                  class="btn btn-outline-primary"
+                >
                   Edit Profile
-                </button>
+                </a>
                 <button class="btn btn-outline-danger" type="button">
                   Delete User
                 </button>

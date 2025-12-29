@@ -16,9 +16,12 @@ type AppContainer struct {
 	JWTAuthMiddleware   gin.HandlerFunc
 
 	// Services
-	AuthService  *services.AuthService
-	UserService  *services.UserService
-	TeamsService *services.TeamsService
+	AuthService     *services.AuthService
+	UserService     *services.UserService
+	TeamsService    *services.TeamsService
+	PositionService *services.PositionService
+	ProjectService  *services.ProjectService
+	SkillService    *services.SkillService
 
 	// Handlers
 	AuthHandler        *handlers.AuthHandler
@@ -36,11 +39,17 @@ func NewAppContainer() *AppContainer {
 	userRepo := repositories.NewUserRepository()
 	teamsRepo := repositories.NewTeamsRepository()
 	teamMemberRepo := repositories.NewTeamMemberRepository()
+	positionRepo := repositories.NewPositionRepository()
+	projectRepo := repositories.NewProjectRepository()
+	skillRepo := repositories.NewSkillRepository()
 
 	// Initialize services
 	authService := services.NewAuthService(config.DB, userRepo)
 	userService := services.NewUserService(config.DB, userRepo)
 	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo)
+	positionService := services.NewPositionService(config.DB, positionRepo)
+	projectService := services.NewProjectService(config.DB, projectRepo)
+	skillService := services.NewSkillService(config.DB, skillRepo)
 
 	return &AppContainer{
 		// Middlewares
@@ -48,9 +57,12 @@ func NewAppContainer() *AppContainer {
 		AdminAuthMiddleware: middlewares.AdminAuthMiddleware(),
 
 		// Services
-		AuthService:  authService,
-		UserService:  userService,
-		TeamsService: teamsService,
+		AuthService:     authService,
+		UserService:     userService,
+		TeamsService:    teamsService,
+		PositionService: positionService,
+		ProjectService:  projectService,
+		SkillService:    skillService,
 
 		// Handlers
 		AuthHandler:        handlers.NewAuthHandler(authService),
@@ -60,6 +72,6 @@ func NewAppContainer() *AppContainer {
 		// Admin Handlers
 		AdminAuthHandler:      handlers.NewAdminAuthHandler(authService),
 		AdminDashboardHandler: handlers.NewAdminDashboardHandler(userService),
-		AdminUserHandler:      handlers.NewAdminUserHandler(userService, teamsService),
+		AdminUserHandler:      handlers.NewAdminUserHandler(userService, teamsService, positionService, skillService),
 	}
 }

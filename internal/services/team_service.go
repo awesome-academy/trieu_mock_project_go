@@ -120,15 +120,15 @@ func (s *TeamsService) GetTeamMembers(c context.Context, teamID uint, limit, off
 	return response, nil
 }
 
-func (s *TeamsService) GetAllTeamsSummary(c context.Context) []dtos.TeamSummary {
+func (s *TeamsService) GetAllTeamsSummary(c context.Context) []dtos.PositionSummary {
 	teams, err := s.teamRepository.FindAllTeamsSummary(s.db.WithContext(c))
 	if err != nil {
-		return []dtos.TeamSummary{}
+		return []dtos.PositionSummary{}
 	}
 
-	teamDtos := make([]dtos.TeamSummary, 0, len(teams))
+	teamDtos := make([]dtos.PositionSummary, 0, len(teams))
 	for _, team := range teams {
-		teamDtos = append(teamDtos, dtos.TeamSummary{
+		teamDtos = append(teamDtos, dtos.PositionSummary{
 			ID:   team.ID,
 			Name: team.Name,
 		})

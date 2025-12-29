@@ -3,12 +3,12 @@ package dtos
 import "time"
 
 type PaginationResponse struct {
-	Limit  int `json:"limit"`
-	Offset int `json:"offset"`
+	Limit  int   `json:"limit"`
+	Offset int   `json:"offset"`
 	Total  int64 `json:"total"`
 }
 
-type TeamSummary struct {
+type PositionSummary struct {
 	ID   uint   `json:"id"`
 	Name string `json:"name"`
 }
@@ -27,7 +27,14 @@ type ProjectSummary struct {
 	EndDate      *time.Time `json:"end_date"`
 }
 
-type UserSkillSummary struct {
+type SkillSummary struct {
 	ID   uint   `json:"id"`
 	Name string `json:"name"`
+}
+
+type UserSkillSummary struct {
+	ID             uint   `json:"id"`
+	Name           string `json:"name"`
+	Level          int    `json:"level"`
+	UsedYearNumber int    `json:"used_year_number"`
 }
