@@ -26,6 +26,28 @@ func main() {
 	// Create Gin router
 	router := gin.Default()
 
+	setupHtmlTemplate(router)
+
+	router.Static("/static", "./static")
+
+	setupSessionConfiguration(router, cfg)
+
+	// Initialize app container
+	appContainer := bootstrap.NewAppContainer()
+
+	// Setup routes
+	routes.SetupRoutes(router, appContainer)
+
+	// Start server
+	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
+	log.Printf("Starting server on %s", addr)
+
+	if err := router.Run(addr); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
+}
+
+func setupHtmlTemplate(router *gin.Engine) {
 	router.SetFuncMap(template.FuncMap{
 		"add": func(a, b int) int { return a + b },
 		"sub": func(a, b int) int { return a - b },
@@ -48,9 +70,9 @@ func main() {
 	})
 
 	router.LoadHTMLGlob("templates/**/*")
+}
 
-	router.Static("/static", "./static")
-
+func setupSessionConfiguration(router *gin.Engine, cfg *config.Config) {
 	store := cookie.NewStore([]byte(cfg.SessionConfig.Secret))
 	store.Options(sessions.Options{
 		Path:     "/",
@@ -60,18 +82,4 @@ func main() {
 		Secure:   cfg.SessionConfig.Secure,
 	})
 	router.Use(sessions.Sessions("trieu_mock_project_session", store))
-
-	// Initialize app container
-	appContainer := bootstrap.NewAppContainer()
-
-	// Setup routes
-	routes.SetupRoutes(router, appContainer)
-
-	// Start server
-	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
-	log.Printf("Starting server on %s", addr)
-
-	if err := router.Run(addr); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
-	}
 }
