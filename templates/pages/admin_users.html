@@ -8,9 +8,14 @@
     {{template "partials/admin_navbar.html" .}}
 
     <div class="container mt-4">
-      <div class="row mb-4">
+      <div class="row mb-4 align-items-center">
         <div class="col">
           <h1>User Management</h1>
+        </div>
+        <div class="col-auto">
+          <a href="/admin/users/create" class="btn btn-success">
+            <i class="bi bi-person-plus me-1"></i>Create User
+          </a>
         </div>
       </div>
 

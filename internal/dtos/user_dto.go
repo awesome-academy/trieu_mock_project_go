@@ -33,7 +33,7 @@ type UserDataForSearch struct {
 	Email string `json:"email"`
 }
 
-type UpdateUserRequest struct {
+type CreateOrUpdateUserRequest struct {
 	Name       string            `json:"name" binding:"required"`
 	Email      string            `json:"email" binding:"required,email"`
 	Birthday   *types.Date       `json:"birthday"`

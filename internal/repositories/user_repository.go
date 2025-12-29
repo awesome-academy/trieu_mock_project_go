@@ -63,6 +63,22 @@ func (r *UserRepository) SearchUsers(db *gorm.DB, teamId *uint, limit, offset in
 	return users, count, nil
 }
 
+func (r *UserRepository) CreateUser(db *gorm.DB, user *models.User) error {
+	if err := db.Create(user).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *UserRepository) CreateUserSkills(db *gorm.DB, userSkills []models.UserSkill) error {
+	if len(userSkills) > 0 {
+		if err := db.Create(&userSkills).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (r *UserRepository) UpdateUser(db *gorm.DB, user *models.User, skills []models.UserSkill) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		// Update user basic info

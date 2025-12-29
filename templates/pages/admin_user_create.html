@@ -1,0 +1,187 @@
+{{define "pages/admin_user_create.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {{template "partials/admin_head.html" .}}
+  </head>
+  <body>
+    {{template "partials/admin_navbar.html" .}}
+
+    <div class="container mt-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+          <li class="breadcrumb-item"><a href="/admin/users">Users</a></li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Create User
+          </li>
+        </ol>
+      </nav>
+
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+              <h5 class="mb-0 fw-bold">
+                <i class="bi bi-person-plus me-2 text-success"></i>Create New
+                User
+              </h5>
+            </div>
+            <div class="card-body p-4">
+              <form id="createUserForm">
+                <!-- Basic Information -->
+                <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+                  Basic Information
+                </h6>
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label for="name" class="form-label fw-bold"
+                      >Full Name</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="name"
+                      name="name"
+                      placeholder="Enter full name"
+                      required
+                    />
+                  </div>
+                  <div class="col-md-6">
+                    <label for="email" class="form-label fw-bold"
+                      >Email Address</label
+                    >
+                    <input
+                      type="email"
+                      class="form-control"
+                      id="email"
+                      name="email"
+                      placeholder="user@example.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div class="row mb-4">
+                  <div class="col-md-6">
+                    <label for="birthday" class="form-label fw-bold"
+                      >Birthday</label
+                    >
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="birthday"
+                      name="birthday"
+                    />
+                  </div>
+                </div>
+
+                <!-- Organization -->
+                <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+                  Organization
+                </h6>
+                <div class="row mb-4">
+                  <div class="col-md-6">
+                    <label for="position" class="form-label fw-bold"
+                      >Position</label
+                    >
+                    <select
+                      class="form-select"
+                      id="position"
+                      name="position_id"
+                      required
+                    >
+                      <option value="" selected disabled>
+                        -- Select Position --
+                      </option>
+                      {{range .positions}}
+                      <option value="{{.ID}}">{{.Name}}</option>
+                      {{end}}
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="team" class="form-label fw-bold"
+                      >Current Team</label
+                    >
+                    <select class="form-select" id="team" name="team_id">
+                      <option value="">No Team</option>
+                      {{range .teams}}
+                      <option value="{{.ID}}">{{.Name}}</option>
+                      {{end}}
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Skills -->
+                <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+                  Skills
+                </h6>
+                <div class="mb-4">
+                  <div class="table-responsive">
+                    <table
+                      class="table table-hover align-middle"
+                      id="skillsTable"
+                    >
+                      <thead class="table-light">
+                        <tr>
+                          <th>Skill Name</th>
+                          <th style="width: 150px">Level (1-10)</th>
+                          <th style="width: 150px">Years (0-100)</th>
+                          <th style="width: 50px"></th>
+                        </tr>
+                      </thead>
+                      <tbody id="skillsList">
+                        <!-- Skills will be added here dynamically -->
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div class="row g-2 align-items-center mt-2">
+                    <div class="col-md-6">
+                      <select class="form-select" id="newSkillSelect">
+                        <option value="">-- Select Skill to Add --</option>
+                        {{range .skills}}
+                        <option value="{{.ID}}" data-name="{{.Name}}">
+                          {{.Name}}
+                        </option>
+                        {{end}}
+                      </select>
+                    </div>
+                    <div class="col-auto">
+                      <button
+                        type="button"
+                        class="btn btn-success"
+                        id="addSkillBtn"
+                      >
+                        <i class="bi bi-plus-lg me-1"></i>Add Skill
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="d-flex justify-content-between align-items-center border-top pt-4"
+                >
+                  <a href="/admin/users" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                  </a>
+                  <button
+                    type="button"
+                    class="btn btn-success px-5 fw-bold"
+                    id="createUserBtn"
+                  >
+                    <i class="bi bi-person-plus me-1"></i>Create User
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {{template "partials/admin_scripts.html" .}}
+    <script src="/static/js/admin_user_create.js"></script>
+  </body>
+</html>
+{{end}}

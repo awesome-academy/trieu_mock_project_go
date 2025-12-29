@@ -108,7 +108,43 @@ func (s *UserService) SearchUsers(c context.Context, teamId *uint, limit, offset
 	return response, nil
 }
 
-func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.UpdateUserRequest) error {
+func (s *UserService) CreateUser(c context.Context, req dtos.CreateOrUpdateUserRequest) error {
+	var birthday *time.Time
+	if req.Birthday != nil && !req.Birthday.Time.IsZero() {
+		birthday = &req.Birthday.Time
+	}
+
+	user := &models.User{
+		Name:          req.Name,
+		Email:         req.Email,
+		Birthday:      birthday,
+		PositionID:    req.PositionID,
+		CurrentTeamID: req.TeamID,
+	}
+
+	s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		err := s.userRepository.CreateUser(tx, user)
+		if err != nil {
+			return err
+		}
+
+		userSkills := make([]models.UserSkill, 0, len(req.Skills))
+		for _, sReq := range req.Skills {
+			userSkills = append(userSkills, models.UserSkill{
+				UserID:         user.ID,
+				SkillID:        sReq.ID,
+				Level:          sReq.Level,
+				UsedYearNumber: sReq.UsedYearNumber,
+			})
+		}
+
+		return s.userRepository.CreateUserSkills(tx, userSkills)
+	})
+
+	return nil
+}
+
+func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUpdateUserRequest) error {
 	var birthday *time.Time
 	if req.Birthday != nil && !req.Birthday.Time.IsZero() {
 		birthday = &req.Birthday.Time

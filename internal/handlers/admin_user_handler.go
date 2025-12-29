@@ -87,6 +87,34 @@ func (h *AdminUserHandler) AdminUserDetailPage(c *gin.Context) {
 	})
 }
 
+func (h *AdminUserHandler) AdminUserCreatePage(c *gin.Context) {
+	allTeam := h.teamService.GetAllTeamsSummary(c.Request.Context())
+	positions := h.positionService.GetAllPositionsSummary(c.Request.Context())
+	skills := h.skillService.GetAllSkillsSummary(c.Request.Context())
+
+	c.HTML(http.StatusOK, "pages/admin_user_create.html", gin.H{
+		"title":     "Create User",
+		"teams":     allTeam,
+		"positions": positions,
+		"skills":    skills,
+	})
+}
+
+func (h *AdminUserHandler) CreateUser(c *gin.Context) {
+	var req dtos.CreateOrUpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.userService.CreateUser(c.Request.Context(), req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User created successfully"})
+}
+
 func (h *AdminUserHandler) AdminUserEditPage(c *gin.Context) {
 	userIdParam := c.Param("userId")
 
@@ -129,7 +157,7 @@ func (h *AdminUserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	var req dtos.UpdateUserRequest
+	var req dtos.CreateOrUpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
