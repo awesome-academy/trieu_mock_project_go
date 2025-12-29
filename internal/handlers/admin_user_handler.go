@@ -1,12 +1,12 @@
 package handlers
 
 import (
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 	"trieu_mock_project_go/internal/dtos"
+	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/services"
-
-	"github.com/gin-gonic/gin"
 )
 
 type AdminUserHandler struct {
@@ -101,14 +101,17 @@ func (h *AdminUserHandler) AdminUserCreatePage(c *gin.Context) {
 }
 
 func (h *AdminUserHandler) CreateUser(c *gin.Context) {
-	var req dtos.CreateOrUpdateUserRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var request dtos.CreateOrUpdateUserRequest
+	if appErrors.HandleBindError(c, c.ShouldBindJSON(&request)) {
 		return
 	}
 
-	if err := h.userService.CreateUser(c.Request.Context(), req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+	if err := h.userService.CreateUser(c.Request.Context(), request); err != nil {
+		if err == appErrors.ErrEmailAlreadyExists {
+			appErrors.RespondError(c, http.StatusBadRequest, err.Error())
+		} else {
+			appErrors.RespondError(c, http.StatusInternalServerError, "Failed to create user")
+		}
 		return
 	}
 
@@ -153,18 +156,26 @@ func (h *AdminUserHandler) UpdateUser(c *gin.Context) {
 	userIdParam := c.Param("userId")
 	userId, err := strconv.Atoi(userIdParam)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		appErrors.RespondError(c, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
-	var req dtos.CreateOrUpdateUserRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var request dtos.CreateOrUpdateUserRequest
+	if appErrors.HandleBindError(c, c.ShouldBindJSON(&request)) {
 		return
 	}
 
-	if err := h.userService.UpdateUser(c.Request.Context(), uint(userId), req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+	if err := h.userService.UpdateUser(c.Request.Context(), uint(userId), request); err != nil {
+		if err == appErrors.ErrUserNotFound {
+			appErrors.RespondError(c, http.StatusNotFound, err.Error())
+			return
+		}
+		if err == appErrors.ErrEmailAlreadyExists {
+			appErrors.RespondError(c, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to update user")
 		return
 	}
 
@@ -175,12 +186,17 @@ func (h *AdminUserHandler) DeleteUser(c *gin.Context) {
 	userIdParam := c.Param("userId")
 	userId, err := strconv.Atoi(userIdParam)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		appErrors.RespondError(c, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
 	if err := h.userService.DeleteUser(c.Request.Context(), uint(userId)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user"})
+		if err == appErrors.ErrUserNotFound {
+			appErrors.RespondError(c, http.StatusNotFound, err.Error())
+			return
+		}
+
+		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to delete user")
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})

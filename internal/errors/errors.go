@@ -17,6 +17,8 @@ var (
 	ErrInvalidAuthHeader       = errors.New("invalid authorization header format")
 	ErrInvalidToken            = errors.New("invalid or expired token")
 	ErrUnexpectedSigningMethod = errors.New("unexpected signing method")
+	ErrEmailAlreadyExists      = errors.New("email already exists")
+	ErrUserNotFound            = errors.New("user not found")
 )
 
 // Error response

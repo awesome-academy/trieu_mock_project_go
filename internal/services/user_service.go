@@ -5,6 +5,7 @@ import (
 	"time"
 	"trieu_mock_project_go/helpers"
 	"trieu_mock_project_go/internal/dtos"
+	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/repositories"
 	"trieu_mock_project_go/models"
 
@@ -63,6 +64,14 @@ func (s *UserService) SearchUsers(c context.Context, teamId *uint, limit, offset
 }
 
 func (s *UserService) CreateUser(c context.Context, req dtos.CreateOrUpdateUserRequest) error {
+	existedUser, err := s.userRepository.FindByEmail(s.db.WithContext(c), req.Email)
+	if err != nil {
+		return err
+	}
+	if existedUser != nil {
+		return appErrors.ErrEmailAlreadyExists
+	}
+
 	var birthday *time.Time
 	if req.Birthday != nil && !req.Birthday.Time.IsZero() {
 		birthday = &req.Birthday.Time
@@ -104,6 +113,24 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 		birthday = &req.Birthday.Time
 	}
 
+	currentUser, err := s.userRepository.FindByID(s.db.WithContext(c), id)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return appErrors.ErrUserNotFound
+		}
+		return err
+	}
+
+	if currentUser.Email != req.Email {
+		existedUser, err := s.userRepository.FindByEmail(s.db.WithContext(c), req.Email)
+		if err != nil {
+			return err
+		}
+		if existedUser != nil {
+			return appErrors.ErrEmailAlreadyExists
+		}
+	}
+
 	user := &models.User{
 		ID:            id,
 		Name:          req.Name,
@@ -127,6 +154,14 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 }
 
 func (s *UserService) DeleteUser(c context.Context, id uint) error {
+	_, err := s.userRepository.FindByID(s.db.WithContext(c), id)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return appErrors.ErrUserNotFound
+		}
+		return err
+	}
+
 	if err := s.db.WithContext(c).Delete(&models.User{}, id).Error; err != nil {
 		return err
 	}
