@@ -50,7 +50,13 @@
                 >
                   Edit Profile
                 </a>
-                <button class="btn btn-outline-danger" type="button">
+                <button
+                  class="btn btn-outline-danger"
+                  type="button"
+                  id="deleteUserBtn"
+                  data-user-id="{{.user.ID}}"
+                  data-user-name="{{.user.Name}}"
+                >
                   Delete User
                 </button>
               </div>
@@ -154,6 +160,7 @@
     </div>
 
     {{template "partials/admin_scripts.html" .}}
+    <script src="/static/js/admin_user_detail.js"></script>
   </body>
 </html>
 {{end}}

@@ -171,3 +171,11 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 
 	return s.userRepository.UpdateUser(s.db.WithContext(c), user, userSkills)
 }
+
+func (s *UserService) DeleteUser(c context.Context, id uint) error {
+	if err := s.db.WithContext(c).Delete(&models.User{}, id).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
