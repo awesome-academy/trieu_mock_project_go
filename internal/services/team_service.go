@@ -2,9 +2,9 @@ package services
 
 import (
 	"context"
+	"trieu_mock_project_go/helpers"
 	"trieu_mock_project_go/internal/dtos"
 	"trieu_mock_project_go/internal/repositories"
-	"trieu_mock_project_go/models"
 
 	"gorm.io/gorm"
 )
@@ -30,24 +30,7 @@ func (s *TeamsService) ListTeams(c context.Context, limit, offset int) (*dtos.Li
 		return nil, err
 	}
 
-	teamDtos := make([]dtos.Team, 0, len(teams))
-	for _, team := range teams {
-
-		teamDtos = append(teamDtos, dtos.Team{
-			ID:          team.ID,
-			Name:        team.Name,
-			Description: team.Description,
-			CreatedAt:   team.CreatedAt,
-			UpdatedAt:   team.UpdatedAt,
-
-			Leader: dtos.UserSummary{
-				ID:   team.LeaderID,
-				Name: team.Leader.Name,
-			},
-			Members:  s.extractTeamMembersFromTeam(team),
-			Projects: s.extractProjectsFromTeam(team),
-		})
-	}
+	teamDtos := helpers.MapTeamsToTeamDtos(teams)
 
 	response := &dtos.ListTeamsResponse{
 		Teams: teamDtos,
@@ -67,22 +50,7 @@ func (s *TeamsService) GetTeamDetails(c context.Context, id uint) (*dtos.Team, e
 		return nil, err
 	}
 
-	teamDto := &dtos.Team{
-		ID:          team.ID,
-		Name:        team.Name,
-		Description: team.Description,
-		CreatedAt:   team.CreatedAt,
-		UpdatedAt:   team.UpdatedAt,
-
-		Leader: dtos.UserSummary{
-			ID:   team.LeaderID,
-			Name: team.Leader.Name,
-		},
-		Members:  s.extractTeamMembersFromTeam(*team),
-		Projects: s.extractProjectsFromTeam(*team),
-	}
-
-	return teamDto, nil
+	return helpers.MapTeamToTeamDto(team), nil
 }
 
 func (s *TeamsService) GetTeamMembers(c context.Context, teamID uint, limit, offset int) (*dtos.ListTeamMembersResponse, error) {
@@ -96,20 +64,8 @@ func (s *TeamsService) GetTeamMembers(c context.Context, teamID uint, limit, off
 		return nil, err
 	}
 
-	memberDtos := make([]dtos.TeamMemberSummary, 0, len(members))
-	if len(members) > 0 {
-		for _, member := range members {
-			memberDtos = append(memberDtos, dtos.TeamMemberSummary{
-				ID:       member.User.ID,
-				Name:     member.User.Name,
-				Email:    member.User.Email,
-				JoinedAt: member.JoinedAt,
-			})
-		}
-	}
-
 	response := &dtos.ListTeamMembersResponse{
-		Members: memberDtos,
+		Members: helpers.MapTeamMembersToTeamMemberSummaries(members),
 		Page: dtos.PaginationResponse{
 			Limit:  limit,
 			Offset: offset,
@@ -118,33 +74,4 @@ func (s *TeamsService) GetTeamMembers(c context.Context, teamID uint, limit, off
 	}
 
 	return response, nil
-}
-
-func (r *TeamsService) extractTeamMembersFromTeam(team models.Team) []dtos.UserSummary {
-	teamMembers := make([]dtos.UserSummary, 0)
-	if len(team.Members) > 0 {
-		for _, member := range team.Members {
-			teamMembers = append(teamMembers, dtos.UserSummary{
-				ID:   member.ID,
-				Name: member.Name,
-			})
-		}
-	}
-	return teamMembers
-}
-
-func (r *TeamsService) extractProjectsFromTeam(team models.Team) []dtos.ProjectSummary {
-	projects := make([]dtos.ProjectSummary, 0, len(team.Projects))
-	if len(team.Projects) > 0 {
-		for _, project := range team.Projects {
-			projects = append(projects, dtos.ProjectSummary{
-				ID:           project.ID,
-				Name:         project.Name,
-				Abbreviation: project.Abbreviation,
-				StartDate:    project.StartDate,
-				EndDate:      project.EndDate,
-			})
-		}
-	}
-	return projects
 }
