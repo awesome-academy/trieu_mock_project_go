@@ -72,12 +72,15 @@ func MapUserToUserProfile(user *models.User) *dtos.UserProfile {
 	projects := MapProjectsToProjectSummaries(user.Projects)
 
 	skills := MapUserSkillsToUserSkillSummaries(user.UserSkill)
-
+	var birthday *types.Date
+	if user.Birthday != nil {
+		birthday = &types.Date{Time: *user.Birthday}
+	}
 	return &dtos.UserProfile{
 		ID:          user.ID,
 		Name:        user.Name,
 		Email:       user.Email,
-		Birthday:    &types.Date{Time: *user.Birthday},
+		Birthday:    birthday,
 		CurrentTeam: currentTeam,
 		Position: dtos.Position{
 			ID:           user.Position.ID,
