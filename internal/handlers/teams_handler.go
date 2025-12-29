@@ -29,11 +29,11 @@ func (h *TeamsHandler) ListTeams(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.teamsService.ListTeams(c.Request.Context(), query.Limit, query.Offset)
+	teamsResp, err := h.teamsService.ListTeams(c.Request.Context(), query.Limit, query.Offset)
 	if err != nil {
 		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to list teams")
 		return
 	}
 
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusOK, teamsResp)
 }
