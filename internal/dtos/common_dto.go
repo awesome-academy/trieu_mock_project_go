@@ -8,6 +8,11 @@ type PaginationResponse struct {
 	Total  int64 `json:"total"`
 }
 
+type TeamSummary struct {
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+}
+
 type PositionSummary struct {
 	ID   uint   `json:"id"`
 	Name string `json:"name"`

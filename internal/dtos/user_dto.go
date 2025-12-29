@@ -10,7 +10,7 @@ type UserProfile struct {
 	Email    string      `json:"email"`
 	Birthday *types.Date `json:"birthday"`
 
-	CurrentTeam *PositionSummary   `json:"current_team,omitempty"`
+	CurrentTeam *TeamSummary       `json:"current_team,omitempty"`
 	Position    Position           `json:"position"`
 	Projects    []ProjectSummary   `json:"projects"`
 	Skills      []UserSkillSummary `json:"skills"`

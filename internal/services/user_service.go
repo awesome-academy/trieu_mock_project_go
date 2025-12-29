@@ -3,10 +3,10 @@ package services
 import (
 	"context"
 	"time"
+	"trieu_mock_project_go/helpers"
 	"trieu_mock_project_go/internal/dtos"
 	"trieu_mock_project_go/internal/repositories"
 	"trieu_mock_project_go/models"
-	"trieu_mock_project_go/types"
 
 	"gorm.io/gorm"
 )
@@ -26,53 +26,7 @@ func (s *UserService) GetUserProfile(c context.Context, id uint) (*dtos.UserProf
 		return nil, err
 	}
 
-	var currentTeam dtos.PositionSummary
-	if user.CurrentTeam != nil {
-		currentTeam = dtos.PositionSummary{
-			ID:   user.CurrentTeam.ID,
-			Name: user.CurrentTeam.Name,
-		}
-	}
-
-	projects := make([]dtos.ProjectSummary, 0)
-	if len(user.Projects) > 0 {
-		for _, project := range user.Projects {
-			projects = append(projects, dtos.ProjectSummary{
-				ID:           project.ID,
-				Name:         project.Name,
-				Abbreviation: project.Abbreviation,
-				StartDate:    project.StartDate,
-				EndDate:      project.EndDate,
-			})
-		}
-	}
-
-	userSkills := make([]dtos.UserSkillSummary, 0)
-	if len(user.UserSkill) > 0 {
-		for _, skill := range user.UserSkill {
-			userSkills = append(userSkills, dtos.UserSkillSummary{
-				ID:             skill.Skill.ID,
-				Name:           skill.Skill.Name,
-				Level:          skill.Level,
-				UsedYearNumber: skill.UsedYearNumber,
-			})
-		}
-	}
-
-	userProfile := &dtos.UserProfile{
-		ID:          user.ID,
-		Name:        user.Name,
-		Email:       user.Email,
-		Birthday:    &types.Date{Time: *user.Birthday},
-		CurrentTeam: &currentTeam,
-		Position: dtos.Position{
-			ID:           user.Position.ID,
-			Name:         user.Position.Name,
-			Abbreviation: user.Position.Abbreviation,
-		},
-		Projects: projects,
-		Skills:   userSkills,
-	}
+	userProfile := helpers.MapUserToUserProfile(user)
 
 	return userProfile, nil
 }
