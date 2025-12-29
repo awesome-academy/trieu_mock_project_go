@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const teamFilter = document.getElementById("teamFilter");
   const searchBtn = document.getElementById("searchBtn");
   const userListContainer = document.getElementById("userListContainer");
+  const loadingTemplate = document.getElementById("loadingTemplate");
 
   function loadUsers(offset = 0) {
     const teamId = teamFilter.value;
@@ -10,6 +11,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (teamId) {
       url += `&team_id=${teamId}`;
     }
+
+    // Show loading spinner
+    userListContainer.innerHTML = loadingTemplate.innerHTML;
 
     fetch(url)
       .then((response) => response.text())

@@ -44,7 +44,7 @@
         </div>
       </div>
 
-      <div id="userListContainer">
+      <div id="userListContainer" style="min-height: 400px">
         <div class="text-center py-5">
           <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
@@ -52,6 +52,14 @@
         </div>
       </div>
     </div>
+
+    <template id="loadingTemplate">
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    </template>
 
     {{template "partials/admin_scripts.html" .}}
     <script src="/static/js/admin_users.js"></script>
