@@ -34,11 +34,12 @@ func NewAppContainer() *AppContainer {
 	// Initialize repositories
 	userRepo := repositories.NewUserRepository()
 	teamsRepo := repositories.NewTeamsRepository()
+	teamMemberRepo := repositories.NewTeamMemberRepository()
 
 	// Initialize services
 	authService := services.NewAuthService(config.DB, userRepo)
 	userService := services.NewUserService(config.DB, userRepo)
-	teamsService := services.NewTeamsService(config.DB, teamsRepo)
+	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo)
 
 	return &AppContainer{
 		// Middlewares

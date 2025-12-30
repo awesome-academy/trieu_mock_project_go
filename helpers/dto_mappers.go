@@ -121,3 +121,23 @@ func MapTeamsToTeamDtos(teams []models.Team) []dtos.Team {
 	}
 	return teamDtos
 }
+
+func MapTeamMemberToTeamMemberSummary(member *models.TeamMember) *dtos.TeamMemberSummary {
+	if member == nil {
+		return nil
+	}
+	return &dtos.TeamMemberSummary{
+		ID:       member.User.ID,
+		Name:     member.User.Name,
+		Email:    member.User.Email,
+		JoinedAt: member.JoinedAt,
+	}
+}
+
+func MapTeamMembersToTeamMemberSummaries(members []models.TeamMember) []dtos.TeamMemberSummary {
+	teamMemberSummaries := make([]dtos.TeamMemberSummary, 0, len(members))
+	for _, member := range members {
+		teamMemberSummaries = append(teamMemberSummaries, *MapTeamMemberToTeamMemberSummary(&member))
+	}
+	return teamMemberSummaries
+}
