@@ -30,10 +30,10 @@ func NewAdminUserHandler(
 }
 
 func (h *AdminUserHandler) AdminUsersPage(c *gin.Context) {
-	allTeam := h.teamService.GetAllTeamsSummary(c.Request.Context())
+	allTeams := h.teamService.GetAllTeamsSummary(c.Request.Context())
 	c.HTML(http.StatusOK, "pages/admin_users.html", gin.H{
 		"title": "Admin Users Management",
-		"teams": allTeam,
+		"teams": allTeams,
 	})
 }
 
@@ -88,13 +88,13 @@ func (h *AdminUserHandler) AdminUserDetailPage(c *gin.Context) {
 }
 
 func (h *AdminUserHandler) AdminUserCreatePage(c *gin.Context) {
-	allTeam := h.teamService.GetAllTeamsSummary(c.Request.Context())
+	allTeams := h.teamService.GetAllTeamsSummary(c.Request.Context())
 	positions := h.positionService.GetAllPositionsSummary(c.Request.Context())
 	skills := h.skillService.GetAllSkillsSummary(c.Request.Context())
 
 	c.HTML(http.StatusOK, "pages/admin_user_create.html", gin.H{
 		"title":     "Create User",
-		"teams":     allTeam,
+		"teams":     allTeams,
 		"positions": positions,
 		"skills":    skills,
 	})
@@ -139,14 +139,14 @@ func (h *AdminUserHandler) AdminUserEditPage(c *gin.Context) {
 		return
 	}
 
-	allTeam := h.teamService.GetAllTeamsSummary(c.Request.Context())
+	allTeams := h.teamService.GetAllTeamsSummary(c.Request.Context())
 	positions := h.positionService.GetAllPositionsSummary(c.Request.Context())
 	skills := h.skillService.GetAllSkillsSummary(c.Request.Context())
 
 	c.HTML(http.StatusOK, "pages/admin_user_edit.html", gin.H{
 		"title":     "Edit User",
 		"user":      userProfile,
-		"teams":     allTeam,
+		"teams":     allTeams,
 		"positions": positions,
 		"skills":    skills,
 	})
