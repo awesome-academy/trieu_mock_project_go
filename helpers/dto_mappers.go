@@ -210,3 +210,21 @@ func MapUsersToUserDataForSearches(users []models.User) []dtos.UserDataForSearch
 	}
 	return userDtos
 }
+
+func MapSkillToSkillSummary(skill *models.Skill) *dtos.SkillSummary {
+	if skill == nil {
+		return nil
+	}
+	return &dtos.SkillSummary{
+		ID:   skill.ID,
+		Name: skill.Name,
+	}
+}
+
+func MapSkillsToSkillSummaries(skills []models.Skill) []dtos.SkillSummary {
+	skillSummaries := make([]dtos.SkillSummary, 0, len(skills))
+	for _, skill := range skills {
+		skillSummaries = append(skillSummaries, *MapSkillToSkillSummary(&skill))
+	}
+	return skillSummaries
+}

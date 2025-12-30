@@ -55,5 +55,13 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 		adminGroup.GET("/positions/:positionId/edit", appContainer.CSRFMiddleware, appContainer.AdminPositionHandler.EditPositionPage)
 		adminGroup.PUT("/positions/:positionId", appContainer.CSRFMiddleware, appContainer.AdminPositionHandler.UpdatePosition)
 		adminGroup.DELETE("/positions/:positionId", appContainer.CSRFMiddleware, appContainer.AdminPositionHandler.DeletePosition)
+		// Admin skill management
+		adminGroup.GET("/skills", appContainer.CSRFMiddleware, appContainer.AdminSkillHandler.ListSkillPage)
+		adminGroup.GET("/skills/partial/search", appContainer.AdminSkillHandler.SkillSearchPartial)
+		adminGroup.GET("/skills/create", appContainer.CSRFMiddleware, appContainer.AdminSkillHandler.CreateSkillPage)
+		adminGroup.POST("/skills", appContainer.CSRFMiddleware, appContainer.AdminSkillHandler.CreateSkill)
+		adminGroup.GET("/skills/:skillId/edit", appContainer.CSRFMiddleware, appContainer.AdminSkillHandler.EditSkillPage)
+		adminGroup.PUT("/skills/:skillId", appContainer.CSRFMiddleware, appContainer.AdminSkillHandler.UpdateSkill)
+		adminGroup.DELETE("/skills/:skillId", appContainer.CSRFMiddleware, appContainer.AdminSkillHandler.DeleteSkill)
 	}
 }

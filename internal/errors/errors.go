@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/go-sql-driver/mysql"
 )
 
 // Errors definitions
@@ -21,6 +22,8 @@ var (
 	ErrUserNotFound            = errors.New("user not found")
 	ErrPositionAlreadyExists   = errors.New("position with name already exists")
 	ErrPositionInUse           = errors.New("position is assigned to one or more users")
+	ErrSkillAlreadyExists      = errors.New("skill with name already exists")
+	ErrSkillInUse              = errors.New("skill is assigned to one or more users")
 )
 
 // Error response
@@ -88,4 +91,12 @@ func HandleBindError(c *gin.Context, err error) bool {
 		fields,
 	)
 	return true
+}
+
+func IsDuplicatedEntryError(err error) bool {
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
+		return true
+	}
+	return false
 }

@@ -1,12 +1,11 @@
 -- Create positions table
 CREATE TABLE IF NOT EXISTS `positions` (
   `id` int unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `name` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL UNIQUE KEY,
   `abbreviation` varchar(50) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
-CREATE UNIQUE INDEX `idx_positions_name` ON `positions` (`name`);
 
 -- Create users table
 CREATE TABLE IF NOT EXISTS `users` (

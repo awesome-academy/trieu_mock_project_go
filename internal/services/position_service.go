@@ -65,7 +65,7 @@ func (s *PositionService) CreatePosition(c context.Context, req dtos.CreateOrUpd
 	}
 
 	err := s.positionRepository.Create(s.db.WithContext(c), position)
-	if err != nil && err == gorm.ErrDuplicatedKey {
+	if err != nil && appErrors.IsDuplicatedEntryError(err) {
 		return appErrors.ErrPositionAlreadyExists
 	}
 	return err
@@ -85,7 +85,7 @@ func (s *PositionService) UpdatePosition(c context.Context, id uint, req dtos.Cr
 	currentPosition.Abbreviation = strings.TrimSpace(req.Abbreviation)
 
 	err = s.positionRepository.Update(s.db.WithContext(c), currentPosition)
-	if err != nil && err == gorm.ErrDuplicatedKey {
+	if err != nil && appErrors.IsDuplicatedEntryError(err) {
 		return appErrors.ErrPositionAlreadyExists
 	}
 	return err
