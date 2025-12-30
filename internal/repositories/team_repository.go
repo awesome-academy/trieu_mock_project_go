@@ -1,0 +1,38 @@
+package repositories
+
+import (
+	"trieu_mock_project_go/models"
+
+	"gorm.io/gorm"
+)
+
+type TeamsRepository struct {
+}
+
+func NewTeamsRepository() *TeamsRepository {
+	return &TeamsRepository{}
+}
+
+func (r *TeamsRepository) ListTeams(db *gorm.DB, limit, offset int) ([]models.Team, error) {
+	var teams []models.Team
+	result := db.
+		Preload("Leader").
+		Preload("Members").
+		Preload("Projects").
+		Limit(limit).
+		Offset(offset).
+		Find(&teams)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return teams, nil
+}
+
+func (r *TeamsRepository) CountTeams(db *gorm.DB) (int64, error) {
+	var count int64
+	result := db.Model(&models.Team{}).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
+}

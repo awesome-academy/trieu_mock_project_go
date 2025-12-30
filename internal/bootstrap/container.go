@@ -18,11 +18,13 @@ type AppContainer struct {
 	// Services
 	AuthService *services.AuthService
 	UserService *services.UserService
+	TeamsService *services.TeamsService
 
 	// Handlers
 	AuthHandler        *handlers.AuthHandler
 	DashboardHandler   *handlers.DashboardHandler
 	UserProfileHandler *handlers.UserProfileHandler
+	TeamsHandler       *handlers.TeamsHandler
 	// Admin Handlers
 	AdminAuthHandler      *handlers.AdminAuthHandler
 	AdminDashboardHandler *handlers.AdminDashboardHandler
@@ -31,10 +33,12 @@ type AppContainer struct {
 func NewAppContainer() *AppContainer {
 	// Initialize repositories
 	userRepo := repositories.NewUserRepository()
+	teamsRepo := repositories.NewTeamsRepository()
 
 	// Initialize services
 	authService := services.NewAuthService(config.DB, userRepo)
 	userService := services.NewUserService(config.DB, userRepo)
+	teamsService := services.NewTeamsService(config.DB, teamsRepo)
 
 	return &AppContainer{
 		// Middlewares
@@ -44,11 +48,13 @@ func NewAppContainer() *AppContainer {
 		// Services
 		AuthService: authService,
 		UserService: userService,
+		TeamsService: teamsService,
 
 		// Handlers
 		AuthHandler:        handlers.NewAuthHandler(authService),
 		DashboardHandler:   handlers.NewDashboardHandler(),
 		UserProfileHandler: handlers.NewUserProfileHandler(userService),
+		TeamsHandler:       handlers.NewTeamsHandler(teamsService),
 		// Admin Handlers
 		AdminAuthHandler:      handlers.NewAdminAuthHandler(authService),
 		AdminDashboardHandler: handlers.NewAdminDashboardHandler(),

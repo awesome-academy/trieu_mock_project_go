@@ -78,3 +78,46 @@ func MapUserToUserProfile(user *models.User) *dtos.UserProfile {
 		Skills:   skills,
 	}
 }
+
+func MapUserToUserSummary(user *models.User) *dtos.UserSummary {
+	if user == nil {
+		return nil
+	}
+	return &dtos.UserSummary{
+		ID:   user.ID,
+		Name: user.Name,
+	}
+}
+
+func MapUsersToUserSummaries(users []models.User) []dtos.UserSummary {
+	summaries := make([]dtos.UserSummary, 0, len(users))
+	for _, user := range users {
+		summaries = append(summaries, *MapUserToUserSummary(&user))
+	}
+	return summaries
+}
+
+func MapTeamToTeamDto(team *models.Team) *dtos.Team {
+	if team == nil {
+		return nil
+	}
+	return &dtos.Team{
+		ID:          team.ID,
+		Name:        team.Name,
+		Description: team.Description,
+		CreatedAt:   team.CreatedAt,
+		UpdatedAt:   team.UpdatedAt,
+
+		Leader:   *MapUserToUserSummary(&team.Leader),
+		Members:  MapUsersToUserSummaries(team.Members),
+		Projects: MapProjectsToProjectSummaries(team.Projects),
+	}
+}
+
+func MapTeamsToTeamDtos(teams []models.Team) []dtos.Team {
+	teamDtos := make([]dtos.Team, 0, len(teams))
+	for _, team := range teams {
+		teamDtos = append(teamDtos, *MapTeamToTeamDto(&team))
+	}
+	return teamDtos
+}
