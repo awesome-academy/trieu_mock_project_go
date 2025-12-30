@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (
         !confirm(
-          `Are you sure you want to delete user "${userName}"? This action cannot be undone.`
+          `Are you sure you want to delete user "${escapeForDialog(userName)}"? This action cannot be undone.`
         )
       ) {
         return;
@@ -27,3 +27,11 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 });
+
+function escapeForDialog(str) {
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r');
+}

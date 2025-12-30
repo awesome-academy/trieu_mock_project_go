@@ -8,6 +8,7 @@ import (
 	"trieu_mock_project_go/internal/services"
 
 	"github.com/gin-gonic/gin"
+	csrf "github.com/utrack/gin-csrf"
 )
 
 type AdminPositionHandler struct {
@@ -20,7 +21,8 @@ func NewAdminPositionHandler(positionService *services.PositionService) *AdminPo
 
 func (h *AdminPositionHandler) ListPositionPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "pages/admin_positions.html", gin.H{
-		"title": "Admin Positions Management",
+		"title":     "Admin Positions Management",
+		"csrfToken": csrf.GetToken(c),
 	})
 }
 
@@ -49,7 +51,8 @@ func (h *AdminPositionHandler) PositionSearchPartial(c *gin.Context) {
 
 func (h *AdminPositionHandler) CreatePositionPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "pages/admin_position_create.html", gin.H{
-		"title": "Create Position",
+		"title":     "Create Position",
+		"csrfToken": csrf.GetToken(c),
 	})
 }
 
@@ -86,7 +89,7 @@ func (h *AdminPositionHandler) EditPositionPage(c *gin.Context) {
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "pages/admin_position_edit.html", gin.H{
 			"title": "Edit Position",
-			"error": "Failed to load position details",
+			"error": "Position not found",
 		})
 		return
 	}
@@ -94,6 +97,7 @@ func (h *AdminPositionHandler) EditPositionPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "pages/admin_position_edit.html", gin.H{
 		"title":    "Edit Position",
 		"position": position,
+		"csrfToken": csrf.GetToken(c),
 	})
 }
 

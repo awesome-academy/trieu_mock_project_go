@@ -12,6 +12,6 @@ type PositionSearchResponse struct {
 }
 
 type CreateOrUpdatePositionRequest struct {
-	Name         string `json:"name" binding:"required"`
-	Abbreviation string `json:"abbreviation" binding:"required"`
+	Name         string `json:"name" binding:"required,max=255"`
+	Abbreviation string `json:"abbreviation" binding:"required,max=50"`
 }

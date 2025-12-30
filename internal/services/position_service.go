@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"strings"
 	"trieu_mock_project_go/internal/dtos"
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/repositories"
@@ -78,19 +79,15 @@ func (s *PositionService) GetPositionByID(c context.Context, id uint) (*dtos.Pos
 
 func (s *PositionService) CreatePosition(c context.Context, req dtos.CreateOrUpdatePositionRequest) error {
 	position := &models.Position{
-		Name:         req.Name,
-		Abbreviation: req.Abbreviation,
+		Name:         strings.TrimSpace(req.Name),
+		Abbreviation: strings.TrimSpace(req.Abbreviation),
 	}
 
-	existeds, err := s.positionRepository.FindByName(s.db.WithContext(c), req.Name)
-	if err != nil && err != gorm.ErrRecordNotFound {
-		return err
-	}
-	if len(existeds) > 0 {
+	err := s.positionRepository.Create(s.db.WithContext(c), position)
+	if err != nil && err == gorm.ErrDuplicatedKey {
 		return appErrors.ErrPositionAlreadyExists
 	}
-
-	return s.positionRepository.Create(s.db.WithContext(c), position)
+	return err
 }
 
 func (s *PositionService) UpdatePosition(c context.Context, id uint, req dtos.CreateOrUpdatePositionRequest) error {
@@ -103,21 +100,14 @@ func (s *PositionService) UpdatePosition(c context.Context, id uint, req dtos.Cr
 		return err
 	}
 
-	if currentPosition.Name != req.Name {
-		existeds, err := s.positionRepository.FindByName(s.db.WithContext(c), req.Name)
-		if err != nil && err != gorm.ErrRecordNotFound {
-			return err
-		}
-		if len(existeds) > 0 {
-			return appErrors.ErrPositionAlreadyExists
-		}
+	currentPosition.Name = strings.TrimSpace(req.Name)
+	currentPosition.Abbreviation = strings.TrimSpace(req.Abbreviation)
 
-		currentPosition.Name = req.Name
-		currentPosition.Abbreviation = req.Abbreviation
-
-		return s.positionRepository.Update(s.db.WithContext(c), currentPosition)
+	err = s.positionRepository.Update(s.db.WithContext(c), currentPosition)
+	if err != nil && err == gorm.ErrDuplicatedKey {
+		return appErrors.ErrPositionAlreadyExists
 	}
-	return nil
+	return err
 }
 
 func (s *PositionService) DeletePosition(c context.Context, id uint) error {
@@ -127,6 +117,14 @@ func (s *PositionService) DeletePosition(c context.Context, id uint) error {
 			return appErrors.ErrNotFound
 		}
 		return err
+	}
+
+	existedUserUsePosition, err := s.positionRepository.ExistsUsersWithPositionID(s.db.WithContext(c), id)
+	if err != nil {
+		return err
+	}
+	if existedUserUsePosition {
+		return appErrors.ErrPositionInUse
 	}
 
 	return s.positionRepository.Delete(s.db.WithContext(c), id)

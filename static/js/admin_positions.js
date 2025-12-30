@@ -32,9 +32,12 @@ document.addEventListener("DOMContentLoaded", function () {
     paginationLinks.forEach((link) => {
       link.addEventListener("click", function (e) {
         e.preventDefault();
-        const offset = this.getAttribute("data-offset");
-        if (offset !== null) {
-          loadPositions(parseInt(offset));
+        const offsetAttr = this.getAttribute("data-offset");
+        if (offsetAttr !== null) {
+          const offset = parseInt(offsetAttr, 10);
+          if (!Number.isNaN(offset) && offset >= 0) {
+            loadPositions(offset);
+          }
         }
       });
     });
@@ -48,7 +51,13 @@ document.addEventListener("DOMContentLoaded", function () {
         const id = this.getAttribute("data-id");
         const name = this.getAttribute("data-name");
 
-        if (confirm(`Are you sure you want to delete position "${name}"?`)) {
+        if (
+          confirm(
+            `Are you sure you want to delete position "${escapeForDialog(
+              name
+            )}"?`
+          )
+        ) {
           try {
             const response = await AdminPositionService.deletePosition(id);
             Toast.success(response.message || "Position deleted successfully");
@@ -65,3 +74,11 @@ document.addEventListener("DOMContentLoaded", function () {
   // Initial load
   loadPositions(0);
 });
+
+function escapeForDialog(str) {
+  return str
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r");
+}

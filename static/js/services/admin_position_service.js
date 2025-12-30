@@ -11,10 +11,7 @@ const AdminPositionService = {
     let url = `/admin/positions/partial/search?limit=${
       params.limit || 10
     }&offset=${params.offset || 0}`;
-    return fetch(url).then((res) => {
-      if (!res.ok) throw new Error("Failed to fetch positions");
-      return res.text();
-    });
+    return AdminAPI.get(url, { dataType: "html" });
   },
 
   /**
@@ -23,19 +20,7 @@ const AdminPositionService = {
    * @returns {Promise}
    */
   createPosition: function (data) {
-    return fetch("/admin/positions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    }).then(async (res) => {
-      if (!res.ok) {
-        const err = await res.json();
-        return Promise.reject(err);
-      }
-      return res.json();
-    });
+    return AdminAPI.post("/admin/positions", data);
   },
 
   /**
@@ -45,19 +30,7 @@ const AdminPositionService = {
    * @returns {Promise}
    */
   updatePosition: function (positionId, data) {
-    return fetch(`/admin/positions/${positionId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    }).then(async (res) => {
-      if (!res.ok) {
-        const err = await res.json();
-        return Promise.reject(err);
-      }
-      return res.json();
-    });
+    return AdminAPI.put(`/admin/positions/${positionId}`, data);
   },
 
   /**
@@ -66,17 +39,6 @@ const AdminPositionService = {
    * @returns {Promise}
    */
   deletePosition: function (positionId) {
-    return fetch(`/admin/positions/${positionId}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).then(async (res) => {
-      if (!res.ok) {
-        const err = await res.json();
-        return Promise.reject(err);
-      }
-      return res.json();
-    });
+    return AdminAPI.delete(`/admin/positions/${positionId}`);
   },
 };

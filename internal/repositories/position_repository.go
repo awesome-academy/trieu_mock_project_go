@@ -13,17 +13,6 @@ func NewPositionRepository() *PositionRepository {
 	return &PositionRepository{}
 }
 
-func (r *PositionRepository) FindByName(db *gorm.DB, name string) ([]models.Position, error) {
-	var positions []models.Position
-	result := db.
-		Where("name = ?", name).
-		Find(&positions)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return positions, nil
-}
-
 func (r *PositionRepository) FindAllPositionsSummary(db *gorm.DB) ([]models.Position, error) {
 	var positions []models.Position
 	result := db.Find(&positions)
@@ -68,4 +57,20 @@ func (r *PositionRepository) Update(db *gorm.DB, position *models.Position) erro
 
 func (r *PositionRepository) Delete(db *gorm.DB, id uint) error {
 	return db.Delete(&models.Position{}, id).Error
+}
+
+func (r *PositionRepository) ExistsUsersWithPositionID(db *gorm.DB, positionID uint) (bool, error) {
+	var user models.User
+	err := db.
+		Select("id").
+		Where("position_id = ?", positionID).
+		First(&user).Error
+
+	if err == gorm.ErrRecordNotFound {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
