@@ -197,9 +197,10 @@ func MapUserToUserDataForSearch(user *models.User) *dtos.UserDataForSearch {
 		return nil
 	}
 	return &dtos.UserDataForSearch{
-		ID:    user.ID,
-		Name:  user.Name,
-		Email: user.Email,
+		ID:          user.ID,
+		Name:        user.Name,
+		Email:       user.Email,
+		CurrentTeam: MapTeamToTeamSummary(user.CurrentTeam),
 	}
 }
 

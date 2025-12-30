@@ -41,3 +41,13 @@ type ListTeamMembersResponse struct {
 	Members []TeamMemberSummary `json:"members"`
 	Page    PaginationResponse  `json:"page"`
 }
+
+type CreateOrUpdateTeamRequest struct {
+	Name        string  `json:"name" binding:"required,max=255"`
+	Description *string `json:"description" binding:"max=1000"`
+	LeaderID    uint    `json:"leader_id" binding:"required"`
+}
+
+type AddMemberRequest struct {
+	UserID uint `json:"user_id" binding:"required"`
+}

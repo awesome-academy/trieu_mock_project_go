@@ -60,3 +60,15 @@ func (r *TeamsRepository) FindAllTeamsSummary(db *gorm.DB) ([]models.Team, error
 	}
 	return teams, nil
 }
+
+func (r *TeamsRepository) Create(db *gorm.DB, team *models.Team) error {
+	return db.Create(team).Error
+}
+
+func (r *TeamsRepository) Update(db *gorm.DB, team *models.Team) error {
+	return db.Save(team).Error
+}
+
+func (r *TeamsRepository) Delete(db *gorm.DB, id uint) error {
+	return db.Delete(&models.Team{}, id).Error
+}

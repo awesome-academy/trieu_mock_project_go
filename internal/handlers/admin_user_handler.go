@@ -48,7 +48,7 @@ func (h *AdminUserHandler) AdminUsersSearchPartial(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.userService.SearchUsers(c.Request.Context(), query.TeamId, query.Limit, query.Offset)
+	resp, err := h.userService.SearchUsers(c.Request.Context(), nil, query.TeamId, query.Limit, query.Offset)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "partials/admin_users_search.html", gin.H{
 			"error": "Failed to load users",
@@ -60,6 +60,22 @@ func (h *AdminUserHandler) AdminUsersSearchPartial(c *gin.Context) {
 		"users": resp.Users,
 		"page":  resp.Page,
 	})
+}
+
+func (h *AdminUserHandler) AdminUsersSearchJSON(c *gin.Context) {
+	var query dtos.UserSearchRequest
+	if err := c.ShouldBindQuery(&query); err != nil {
+		appErrors.RespondError(c, http.StatusBadRequest, "Invalid query parameters")
+		return
+	}
+
+	resp, err := h.userService.SearchUsers(c.Request.Context(), query.Name, query.TeamId, query.Limit, query.Offset)
+	if err != nil {
+		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to load users")
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
 }
 
 func (h *AdminUserHandler) AdminUserDetailPage(c *gin.Context) {

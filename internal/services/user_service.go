@@ -32,8 +32,8 @@ func (s *UserService) GetUserProfile(c context.Context, id uint) (*dtos.UserProf
 	return userProfile, nil
 }
 
-func (s *UserService) SearchUsers(c context.Context, teamId *uint, limit, offset int) (*dtos.UserSearchResponse, error) {
-	users, totalCount, err := s.userRepository.SearchUsers(s.db.WithContext(c), teamId, limit, offset)
+func (s *UserService) SearchUsers(c context.Context, name *string, teamId *uint, limit, offset int) (*dtos.UserSearchResponse, error) {
+	users, totalCount, err := s.userRepository.SearchUsers(s.db.WithContext(c), name, teamId, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,12 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 		})
 	}
 
-	return s.userRepository.UpdateUser(s.db.WithContext(c), user, userSkills)
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		if err := s.userRepository.UpdateUser(tx, user); err != nil {
+			return err
+		}
+		return s.userRepository.UpdateUserSkills(tx, id, userSkills)
+	})
 }
 
 func (s *UserService) DeleteUser(c context.Context, id uint) error {

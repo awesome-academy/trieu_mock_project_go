@@ -37,3 +37,23 @@ func (r *TeamMemberRepository) CountMembersByTeamID(db *gorm.DB, teamID uint) (i
 	}
 	return count, nil
 }
+
+func (r *TeamMemberRepository) FindActiveMemberByUserID(db *gorm.DB, userID uint) (*models.TeamMember, error) {
+	var member models.TeamMember
+	result := db.Where("user_id = ? AND left_at IS NULL", userID).First(&member)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, result.Error
+	}
+	return &member, nil
+}
+
+func (r *TeamMemberRepository) Create(db *gorm.DB, member *models.TeamMember) error {
+	return db.Create(member).Error
+}
+
+func (r *TeamMemberRepository) Update(db *gorm.DB, member *models.TeamMember) error {
+	return db.Save(member).Error
+}

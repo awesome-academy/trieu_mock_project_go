@@ -17,9 +17,10 @@ type UserProfile struct {
 }
 
 type UserSearchRequest struct {
-	TeamId *uint `form:"team_id"`
-	Limit  int   `form:"limit" binding:"min=1,max=100"`
-	Offset int   `form:"offset" binding:"min=0"`
+	Name   *string `form:"name"`
+	TeamId *uint   `form:"team_id"`
+	Limit  int     `form:"limit" binding:"min=1,max=100"`
+	Offset int     `form:"offset" binding:"min=0"`
 }
 
 type UserSearchResponse struct {
@@ -28,9 +29,10 @@ type UserSearchResponse struct {
 }
 
 type UserDataForSearch struct {
-	ID    uint   `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	ID          uint         `json:"id"`
+	Name        string       `json:"name"`
+	Email       string       `json:"email"`
+	CurrentTeam *TeamSummary `json:"current_team,omitempty"`
 }
 
 type CreateOrUpdateUserRequest struct {

@@ -1,0 +1,178 @@
+{{define "pages/admin_team_edit.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {{template "partials/admin_head.html" .}}
+    <style>
+      .search-results {
+        position: absolute;
+        z-index: 1000;
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    {{template "partials/admin_navbar.html" .}}
+
+    <div class="container mt-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+          <li class="breadcrumb-item">
+            <a href="/admin/teams">Teams</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">Edit Team</li>
+        </ol>
+      </nav>
+
+      <div class="row">
+        <div class="col-12">
+          <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+              <h3 class="mb-0">Edit Team Information</h3>
+            </div>
+            <div class="card-body">
+              <form id="editTeamForm">
+                <input type="hidden" id="teamId" value="{{.team.ID}}" />
+                <div class="mb-3">
+                  <label for="name" class="form-label">Team Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="name"
+                    name="name"
+                    value="{{.team.Name}}"
+                    required
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="description" class="form-label"
+                    >Description</label
+                  >
+                  <textarea
+                    class="form-control"
+                    id="description"
+                    name="description"
+                    rows="3"
+                  >
+{{if .team.Description}}{{.team.Description}}{{end}}</textarea
+                  >
+                </div>
+                <div class="mb-3 position-relative">
+                  <label for="leaderSearch" class="form-label">Leader</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="leaderSearch"
+                    placeholder="Search user by name..."
+                    autocomplete="off"
+                  />
+                  <input
+                    type="hidden"
+                    id="leaderID"
+                    name="leader_id"
+                    value="{{.team.Leader.ID}}"
+                    required
+                  />
+                  <div
+                    id="leaderSearchResults"
+                    class="list-group search-results shadow-sm"
+                  ></div>
+                  <div id="selectedLeader" class="mt-2">
+                    <span class="badge bg-info text-dark p-2">
+                      Selected:
+                      <span id="selectedLeaderName">{{.team.Leader.Name}}</span>
+                      <button
+                        type="button"
+                        class="btn-close btn-close-white ms-2"
+                        id="clearLeader"
+                        aria-label="Clear"
+                      ></button>
+                    </span>
+                  </div>
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                  <a href="/admin/teams" class="btn btn-secondary">Cancel</a>
+                  <button
+                    type="button"
+                    id="updateTeamBtn"
+                    class="btn btn-primary"
+                  >
+                    Update Team
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="card shadow-sm">
+            <div
+              class="card-header bg-white d-flex justify-content-between align-items-center"
+            >
+              <h3 class="mb-0">Team Members</h3>
+            </div>
+            <div class="card-body">
+              <div class="mb-3 position-relative">
+                <label for="memberSearch" class="form-label">Add Member</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="memberSearch"
+                  placeholder="Search user to add..."
+                  autocomplete="off"
+                />
+                <div
+                  id="memberSearchResults"
+                  class="list-group search-results shadow-sm"
+                ></div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="memberList">
+                    {{range .team.Members}}
+                    <tr data-user-id="{{.ID}}">
+                      <td>{{.Name}}</td>
+                      <td>
+                        <button
+                          class="btn btn-sm btn-outline-danger remove-member-btn"
+                          data-user-id="{{.ID}}"
+                        >
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    {{else}}
+                    <tr id="noMembersRow">
+                      <td colspan="2" class="text-center">
+                        No members in this team
+                      </td>
+                    </tr>
+                    {{end}}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {{template "partials/admin_scripts.html" .}}
+    <script src="/static/js/services/admin_user_service.js"></script>
+    <script src="/static/js/services/admin_team_service.js"></script>
+    <script src="/static/js/admin_team_edit.js"></script>
+  </body>
+</html>
+{{end}}

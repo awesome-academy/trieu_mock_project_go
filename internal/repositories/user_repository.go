@@ -36,11 +36,15 @@ func (r *UserRepository) FindByID(db *gorm.DB, id uint) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *UserRepository) SearchUsers(db *gorm.DB, teamId *uint, limit, offset int) ([]models.User, int64, error) {
+func (r *UserRepository) SearchUsers(db *gorm.DB, name *string, teamId *uint, limit, offset int) ([]models.User, int64, error) {
 	var users []models.User
 	query := db.Model(&models.User{})
 
 	result := query
+
+	if name != nil {
+		result = result.Where("name LIKE ?", "%"+*name+"%")
+	}
 
 	if teamId != nil {
 		result = result.Where("current_team_id = ?", *teamId)
@@ -53,6 +57,7 @@ func (r *UserRepository) SearchUsers(db *gorm.DB, teamId *uint, limit, offset in
 	}
 
 	result = result.
+		Preload("CurrentTeam").
 		Limit(limit).
 		Offset(offset).
 		Find(&users)
@@ -79,21 +84,14 @@ func (r *UserRepository) CreateUserSkills(db *gorm.DB, userSkills []models.UserS
 	return nil
 }
 
-func (r *UserRepository) UpdateUser(db *gorm.DB, user *models.User, skills []models.UserSkill) error {
-	return db.Transaction(func(tx *gorm.DB) error {
-		// Update user basic info
-		if err := tx.Model(user).Updates(map[string]interface{}{
-			"name":            user.Name,
-			"email":           user.Email,
-			"birthday":        user.Birthday,
-			"position_id":     user.PositionID,
-			"current_team_id": user.CurrentTeamID,
-		}).Error; err != nil {
-			return err
-		}
+func (r *UserRepository) UpdateUser(db *gorm.DB, user *models.User) error {
+	return db.Save(user).Error
+}
 
+func (r *UserRepository) UpdateUserSkills(db *gorm.DB, userID uint, skills []models.UserSkill) error {
+	return db.Transaction(func(tx *gorm.DB) error {
 		// Delete existing skills
-		if err := tx.Where("user_id = ?", user.ID).Delete(&models.UserSkill{}).Error; err != nil {
+		if err := tx.Where("user_id = ?", userID).Delete(&models.UserSkill{}).Error; err != nil {
 			return err
 		}
 
@@ -106,4 +104,10 @@ func (r *UserRepository) UpdateUser(db *gorm.DB, user *models.User, skills []mod
 
 		return nil
 	})
+}
+
+func (r *UserRepository) UpdateUsersCurrentTeamToNullByTeamID(db *gorm.DB, teamID uint) error {
+	return db.Model(&models.User{}).
+		Where("current_team_id = ?", teamID).
+		Update("current_team_id", nil).Error
 }
