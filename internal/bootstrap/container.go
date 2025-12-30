@@ -14,6 +14,7 @@ type AppContainer struct {
 	// Middlewares
 	AdminAuthMiddleware gin.HandlerFunc
 	JWTAuthMiddleware   gin.HandlerFunc
+	CSRFMiddleware      gin.HandlerFunc
 
 	// Services
 	AuthService     *services.AuthService
@@ -55,6 +56,7 @@ func NewAppContainer() *AppContainer {
 		// Middlewares
 		JWTAuthMiddleware:   middlewares.JWTAuthMiddleware(),
 		AdminAuthMiddleware: middlewares.AdminAuthMiddleware(),
+		CSRFMiddleware:      middlewares.CSRFMiddleware(),
 
 		// Services
 		AuthService:     authService,

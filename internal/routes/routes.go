@@ -28,8 +28,8 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 	}
 
 	// Admin login flow
-	router.GET("/admin/login", appContainer.AdminAuthHandler.AdminShowLogin)
-	router.POST("/admin/login", appContainer.AdminAuthHandler.AdminLogin)
+	router.GET("/admin/login", appContainer.CSRFMiddleware, appContainer.AdminAuthHandler.AdminShowLogin)
+	router.POST("/admin/login", appContainer.CSRFMiddleware, appContainer.AdminAuthHandler.AdminLogin)
 	router.GET("/admin/logout", appContainer.AdminAuthHandler.AdminLogout)
 
 	// Admin routes (Session)
