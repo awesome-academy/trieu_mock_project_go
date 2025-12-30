@@ -1,12 +1,14 @@
 package handlers
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 	"trieu_mock_project_go/internal/dtos"
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/services"
+
+	"github.com/gin-gonic/gin"
+	csrf "github.com/utrack/gin-csrf"
 )
 
 type AdminUserHandler struct {
@@ -82,8 +84,9 @@ func (h *AdminUserHandler) AdminUserDetailPage(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "pages/admin_user_detail.html", gin.H{
-		"title": "User Detail",
-		"user":  userProfile,
+		"title":     "User Detail",
+		"user":      userProfile,
+		"csrfToken": csrf.GetToken(c),
 	})
 }
 
@@ -97,6 +100,7 @@ func (h *AdminUserHandler) AdminUserCreatePage(c *gin.Context) {
 		"teams":     allTeams,
 		"positions": positions,
 		"skills":    skills,
+		"csrfToken": csrf.GetToken(c),
 	})
 }
 
@@ -149,6 +153,7 @@ func (h *AdminUserHandler) AdminUserEditPage(c *gin.Context) {
 		"teams":     allTeams,
 		"positions": positions,
 		"skills":    skills,
+		"csrfToken": csrf.GetToken(c),
 	})
 }
 

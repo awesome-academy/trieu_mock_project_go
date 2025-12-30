@@ -39,11 +39,11 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 		adminGroup.GET("/", appContainer.AdminDashboardHandler.AdminDashboardPage)
 		adminGroup.GET("/users", appContainer.AdminUserHandler.AdminUsersPage)
 		adminGroup.GET("/users/partial/search", appContainer.AdminUserHandler.AdminUsersSearchPartial)
-		adminGroup.GET("/users/create", appContainer.AdminUserHandler.AdminUserCreatePage)
-		adminGroup.POST("/users", appContainer.AdminUserHandler.CreateUser)
-		adminGroup.GET("/users/:userId", appContainer.AdminUserHandler.AdminUserDetailPage)
-		adminGroup.GET("/users/:userId/edit", appContainer.AdminUserHandler.AdminUserEditPage)
-		adminGroup.PUT("/users/:userId", appContainer.AdminUserHandler.UpdateUser)
-		adminGroup.DELETE("/users/:userId", appContainer.AdminUserHandler.DeleteUser)
+		adminGroup.GET("/users/create", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.AdminUserCreatePage)
+		adminGroup.POST("/users", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.CreateUser)
+		adminGroup.GET("/users/:userId", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.AdminUserDetailPage)
+		adminGroup.GET("/users/:userId/edit", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.AdminUserEditPage)
+		adminGroup.PUT("/users/:userId", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.UpdateUser)
+		adminGroup.DELETE("/users/:userId", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.DeleteUser)
 	}
 }
