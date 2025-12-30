@@ -121,7 +121,7 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 
 	if currentUser.Email != req.Email {
 		existedUser, err := s.userRepository.FindByEmail(s.db.WithContext(c), req.Email)
-		if err != nil {
+		if err != nil && err != gorm.ErrRecordNotFound {
 			return err
 		}
 		if existedUser != nil {
