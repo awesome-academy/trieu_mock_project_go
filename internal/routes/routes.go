@@ -28,8 +28,8 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 	}
 
 	// Admin login flow
-	router.GET("/admin/login", appContainer.AdminAuthHandler.AdminShowLogin)
-	router.POST("/admin/login", appContainer.AdminAuthHandler.AdminLogin)
+	router.GET("/admin/login", appContainer.CSRFMiddleware, appContainer.AdminAuthHandler.AdminShowLogin)
+	router.POST("/admin/login", appContainer.CSRFMiddleware, appContainer.AdminAuthHandler.AdminLogin)
 	router.GET("/admin/logout", appContainer.AdminAuthHandler.AdminLogout)
 
 	// Admin routes (Session)
@@ -41,12 +41,12 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 		// Admin user management
 		adminGroup.GET("/users", appContainer.AdminUserHandler.AdminUsersPage)
 		adminGroup.GET("/users/partial/search", appContainer.AdminUserHandler.AdminUsersSearchPartial)
-		adminGroup.GET("/users/create", appContainer.AdminUserHandler.AdminUserCreatePage)
-		adminGroup.POST("/users", appContainer.AdminUserHandler.CreateUser)
-		adminGroup.GET("/users/:userId", appContainer.AdminUserHandler.AdminUserDetailPage)
-		adminGroup.GET("/users/:userId/edit", appContainer.AdminUserHandler.AdminUserEditPage)
-		adminGroup.PUT("/users/:userId", appContainer.AdminUserHandler.UpdateUser)
-		adminGroup.DELETE("/users/:userId", appContainer.AdminUserHandler.DeleteUser)
+		adminGroup.GET("/users/create", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.AdminUserCreatePage)
+		adminGroup.POST("/users", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.CreateUser)
+		adminGroup.GET("/users/:userId", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.AdminUserDetailPage)
+		adminGroup.GET("/users/:userId/edit", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.AdminUserEditPage)
+		adminGroup.PUT("/users/:userId", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.UpdateUser)
+		adminGroup.DELETE("/users/:userId", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.DeleteUser)
 		// Admin position management
 		adminGroup.GET("/positions", appContainer.AdminPositionHandler.ListPositionPage)
 		adminGroup.GET("/positions/partial/search", appContainer.AdminPositionHandler.PositionSearchPartial)

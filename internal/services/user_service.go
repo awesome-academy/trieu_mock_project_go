@@ -85,7 +85,7 @@ func (s *UserService) CreateUser(c context.Context, req dtos.CreateOrUpdateUserR
 		CurrentTeamID: req.TeamID,
 	}
 
-	s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
 		err := s.userRepository.CreateUser(tx, user)
 		if err != nil {
 			return err
@@ -103,8 +103,6 @@ func (s *UserService) CreateUser(c context.Context, req dtos.CreateOrUpdateUserR
 
 		return s.userRepository.CreateUserSkills(tx, userSkills)
 	})
-
-	return nil
 }
 
 func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUpdateUserRequest) error {
@@ -123,7 +121,7 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 
 	if currentUser.Email != req.Email {
 		existedUser, err := s.userRepository.FindByEmail(s.db.WithContext(c), req.Email)
-		if err != nil {
+		if err != nil && err != gorm.ErrRecordNotFound {
 			return err
 		}
 		if existedUser != nil {

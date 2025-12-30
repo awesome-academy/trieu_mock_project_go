@@ -5,7 +5,6 @@ import (
 	"trieu_mock_project_go/helpers"
 	"trieu_mock_project_go/internal/dtos"
 	"trieu_mock_project_go/internal/repositories"
-	"trieu_mock_project_go/models"
 
 	"gorm.io/gorm"
 )
@@ -84,33 +83,4 @@ func (s *TeamsService) GetAllTeamsSummary(c context.Context) []dtos.TeamSummary 
 	}
 
 	return helpers.MapTeamsToTeamSummaries(teams)
-}
-
-func (r *TeamsService) extractTeamMembersFromTeam(team models.Team) []dtos.UserSummary {
-	teamMembers := make([]dtos.UserSummary, 0)
-	if len(team.Members) > 0 {
-		for _, member := range team.Members {
-			teamMembers = append(teamMembers, dtos.UserSummary{
-				ID:   member.ID,
-				Name: member.Name,
-			})
-		}
-	}
-	return teamMembers
-}
-
-func (r *TeamsService) extractProjectsFromTeam(team models.Team) []dtos.ProjectSummary {
-	projects := make([]dtos.ProjectSummary, 0, len(team.Projects))
-	if len(team.Projects) > 0 {
-		for _, project := range team.Projects {
-			projects = append(projects, dtos.ProjectSummary{
-				ID:           project.ID,
-				Name:         project.Name,
-				Abbreviation: project.Abbreviation,
-				StartDate:    project.StartDate,
-				EndDate:      project.EndDate,
-			})
-		}
-	}
-	return projects
 }

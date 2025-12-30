@@ -14,10 +14,7 @@ const AdminUserService = {
     if (params.team_id) {
       url += `&team_id=${params.team_id}`;
     }
-    return fetch(url).then((res) => {
-      if (!res.ok) throw new Error("Failed to fetch users");
-      return res.text();
-    });
+    return AdminAPI.get(url, { dataType: "html" });
   },
 
   /**
@@ -26,19 +23,7 @@ const AdminUserService = {
    * @returns {Promise}
    */
   createUser: function (data) {
-    return fetch("/admin/users", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    }).then(async (res) => {
-      if (!res.ok) {
-        const err = await res.json();
-        return Promise.reject(err);
-      }
-      return res.json();
-    });
+    return AdminAPI.post("/admin/users", data);
   },
 
   /**
@@ -48,19 +33,7 @@ const AdminUserService = {
    * @returns {Promise}
    */
   updateUser: function (userId, data) {
-    return fetch(`/admin/users/${userId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    }).then(async (res) => {
-      if (!res.ok) {
-        const err = await res.json();
-        return Promise.reject(err);
-      }
-      return res.json();
-    });
+    return AdminAPI.put(`/admin/users/${userId}`, data);
   },
 
   /**
@@ -69,17 +42,6 @@ const AdminUserService = {
    * @returns {Promise}
    */
   deleteUser: function (userId) {
-    return fetch(`/admin/users/${userId}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).then(async (res) => {
-      if (!res.ok) {
-        const err = await res.json();
-        return Promise.reject(err);
-      }
-      return res.json();
-    });
+    return AdminAPI.delete(`/admin/users/${userId}`);
   },
 };

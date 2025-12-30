@@ -19,6 +19,7 @@
             <div class="alert alert-danger">{{ .error }}</div>
             {{ end }}
             <form action="/admin/login" method="POST">
+              <input type="hidden" name="_csrf" value="{{ .csrfToken }}" />
               <div class="mb-3">
                 <label for="email" class="form-label">Email address</label>
                 <input

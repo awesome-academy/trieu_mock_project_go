@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	csrf "github.com/utrack/gin-csrf"
 )
 
 type AdminAuthHandler struct {
@@ -18,7 +19,8 @@ func NewAdminAuthHandler(authService *services.AuthService) *AdminAuthHandler {
 
 func (h *AdminAuthHandler) AdminShowLogin(c *gin.Context) {
 	c.HTML(http.StatusOK, "pages/admin_login.html", gin.H{
-		"title": "Admin Login",
+		"title":     "Admin Login",
+		"csrfToken": csrf.GetToken(c),
 	})
 }
 
@@ -29,8 +31,9 @@ func (h *AdminAuthHandler) AdminLogin(c *gin.Context) {
 	user, err := h.authService.Login(c.Request.Context(), email, password)
 	if err != nil || user.Role != "admin" {
 		c.HTML(http.StatusUnauthorized, "pages/admin_login.html", gin.H{
-			"title": "Admin Login",
-			"error": "Invalid email or password, or not an admin",
+			"title":     "Admin Login",
+			"error":     "Invalid email or password, or not an admin",
+			"csrfToken": csrf.GetToken(c),
 		})
 		return
 	}
@@ -40,8 +43,9 @@ func (h *AdminAuthHandler) AdminLogin(c *gin.Context) {
 	session.Set("role", user.Role)
 	if err := session.Save(); err != nil {
 		c.HTML(http.StatusInternalServerError, "pages/admin_login.html", gin.H{
-			"title": "Admin Login",
-			"error": "Failed to save session",
+			"title":     "Admin Login",
+			"error":     "Failed to save session",
+			"csrfToken": csrf.GetToken(c),
 		})
 		return
 	}
@@ -54,8 +58,9 @@ func (h *AdminAuthHandler) AdminLogout(c *gin.Context) {
 	session.Clear()
 	if err := session.Save(); err != nil {
 		c.HTML(http.StatusInternalServerError, "pages/admin_login.html", gin.H{
-			"title": "Admin Login",
-			"error": "Failed to save session",
+			"title":     "Admin Login",
+			"error":     "Failed to save session",
+			"csrfToken": csrf.GetToken(c),
 		})
 		return
 	}
