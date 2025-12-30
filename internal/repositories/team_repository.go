@@ -36,3 +36,16 @@ func (r *TeamsRepository) CountTeams(db *gorm.DB) (int64, error) {
 	}
 	return count, nil
 }
+
+func (r *TeamsRepository) FindByID(db *gorm.DB, id uint) (*models.Team, error) {
+	var team models.Team
+	result := db.
+		Preload("Leader").
+		Preload("Members").
+		Preload("Projects").
+		First(&team, id)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &team, nil
+}

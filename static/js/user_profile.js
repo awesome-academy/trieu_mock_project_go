@@ -1,15 +1,29 @@
 $(document).ready(function () {
   if (!AuthService.isAuthenticated()) return;
 
-  loadUserProfile();
+  // Check if we are viewing a specific user's profile
+  const pathParts = window.location.pathname.split("/");
+  const userId = pathParts[pathParts.length - 1];
+
+  if (userId && !isNaN(userId) && pathParts.includes("profile")) {
+    loadUserProfile(userId);
+  } else {
+    loadUserProfile();
+  }
 });
 
 /**
  * Fetch and display user profile
+ * @param {number|null} userId
  */
-async function loadUserProfile() {
+async function loadUserProfile(userId = null) {
   try {
-    const data = await UserService.getProfile();
+    let data;
+    if (userId) {
+      data = await UserService.getUserProfile(userId);
+    } else {
+      data = await UserService.getProfile();
+    }
     updateProfileDOM(data);
   } catch (error) {
     console.error("Error fetching profile:", error);

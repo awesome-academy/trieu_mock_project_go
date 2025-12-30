@@ -13,6 +13,8 @@ $(document).ready(function () {
  */
 async function loadTeams(offset) {
   try {
+    showLoadingTeams();
+
     const response = await TeamService.listTeams(limit, offset);
     updateTeamsTable(response.teams);
     updatePagination(response.page);
@@ -42,7 +44,7 @@ function updateTeamsTable(teams) {
   teams.forEach((team) => {
     const createdAt = new Date(team.created_at).toLocaleDateString();
     html += `
-      <tr>
+      <tr class="team-row" onclick="goToTeamDetails(${team.id})">
         <td>${team.id}</td>
         <td class="fw-bold">${team.name}</td>
         <td>${team.leader ? team.leader.name : "N/A"}</td>
@@ -57,6 +59,14 @@ function updateTeamsTable(teams) {
     `;
   });
   tbody.html(html);
+}
+
+/**
+ * Redirect to team details page
+ * @param {number} teamId
+ */
+function goToTeamDetails(teamId) {
+  window.location.href = `/teams/${teamId}`;
 }
 
 /**
@@ -105,4 +115,15 @@ function updatePagination(pageInfo) {
   `;
 
   pagination.html(html);
+}
+function showLoadingTeams() {
+  $("#teams-table-body").html(`
+      <tr>
+        <td colspan="6" class="text-center">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </td>
+      </tr>
+    `);
 }
