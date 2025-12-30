@@ -1,7 +1,6 @@
 $(document).ready(function () {
   // Check if already logged in
-  const token = localStorage.getItem("accessToken");
-  if (token) {
+  if (AuthService.isAuthenticated()) {
     // Already logged in, redirect to dashboard
     window.location.href = "/";
   }
@@ -28,35 +27,8 @@ $(document).ready(function () {
     );
 
     try {
-      // Prepare request body
-      const requestBody = {
-        user: {
-          email: email,
-          password: password,
-        },
-      };
-
-      // Send login request
-      const response = await $.ajax({
-        type: "POST",
-        url: "/login",
-        data: JSON.stringify(requestBody),
-        contentType: "application/json",
-        dataType: "json",
-      });
-
-      // Extract access token from response
-      const accessToken = response.user.access_token;
-
-      if (!accessToken) {
-        throw new Error("No access token received from server");
-      }
-
-      // Store token in localStorage
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("userEmail", response.user.email);
-      localStorage.setItem("userName", response.user.name);
-      localStorage.setItem("userId", response.user.id);
+      // Use AuthService for login
+      await AuthService.login(email, password);
 
       // Show success message
       $successAlert.removeClass("d-none");

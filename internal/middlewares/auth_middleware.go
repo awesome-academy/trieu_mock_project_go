@@ -12,7 +12,7 @@ import (
 
 // extractAndValidateToken extracts and validates JWT token from Authorization header
 // Returns (userID, email, error) with error constants from errors package
-func extractAndValidateToken(c *gin.Context) (int64, string, error) {
+func extractAndValidateToken(c *gin.Context) (uint, string, error) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
 		return 0, "", appErrors.ErrMissingAuthHeader

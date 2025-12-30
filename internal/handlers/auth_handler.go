@@ -35,22 +35,18 @@ func (h *AuthHandler) UserLogin(c *gin.Context) {
 	// Login user
 	user, err := h.authService.Login(c.Request.Context(), req.User.Email, req.User.Password)
 	if err != nil {
-		appErrors.RespondError(
-			c,
-			http.StatusUnauthorized,
-			"Invalid email or password",
-		)
+		appErrors.RespondError(c, http.StatusUnauthorized, "Invalid email or password")
 		return
 	}
 
-	token, err := utils.GenerateJWTToken(int64(user.ID), user.Email)
+	token, err := utils.GenerateJWTToken(user.ID, user.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to generate access token")
 		return
 	}
 
 	resp := dtos.LoginResponse{}
-	resp.User.ID = int64(user.ID)
+	resp.User.ID = user.ID
 	resp.User.Name = user.Name
 	resp.User.Email = user.Email
 	resp.User.AccessToken = token

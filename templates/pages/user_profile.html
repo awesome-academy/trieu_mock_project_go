@@ -1,0 +1,135 @@
+{{define "pages/user_profile.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {{template "partials/head.html" .}}
+    <style>
+      .profile-card {
+        border-radius: 15px;
+      }
+      .badge-skill {
+        font-size: 0.9rem;
+        padding: 0.5em 0.8em;
+      }
+    </style>
+  </head>
+  <body>
+    {{template "partials/navbar.html" .}}
+
+    <div class="container mt-5">
+      <div class="row">
+        <!-- Left Column: Basic Info & Skills -->
+        <div class="col-lg-4">
+          <div class="card mb-4 shadow-sm profile-card">
+            <div class="card-body text-center">
+              <img
+                src="https://ui-avatars.com/api/?name=User&background=random&size=150"
+                alt="avatar"
+                class="rounded-circle img-fluid mb-3"
+                style="width: 150px"
+              />
+              <h4 class="mb-1" id="profile-name-header">Loading...</h4>
+              <p class="text-muted mb-1" id="profile-position-header">
+                Loading...
+              </p>
+              <p class="text-muted mb-3" id="profile-team-header">Loading...</p>
+            </div>
+          </div>
+
+          <div class="card mb-4 shadow-sm profile-card">
+            <div class="card-body">
+              <h5 class="card-title border-bottom pb-2 mb-3">Skills</h5>
+              <div id="profile-skills" class="d-flex flex-wrap gap-2">
+                <div
+                  class="spinner-border spinner-border-sm text-primary"
+                  role="status"
+                >
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Detailed Info & Projects -->
+        <div class="col-lg-8">
+          <div class="card mb-4 shadow-sm profile-card">
+            <div class="card-body">
+              <h5 class="card-title border-bottom pb-2 mb-3">
+                Basic Information
+              </h5>
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Full Name</div>
+                <div class="col-sm-8 text-secondary" id="info-name">
+                  Loading...
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Email</div>
+                <div class="col-sm-8 text-secondary" id="info-email">
+                  Loading...
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Birthday</div>
+                <div class="col-sm-8 text-secondary" id="info-birthday">
+                  Loading...
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-sm-4 fw-bold">Current Team</div>
+                <div class="col-sm-8 text-secondary" id="info-team">
+                  Loading...
+                </div>
+              </div>
+              <div class="row mb-0">
+                <div class="col-sm-4 fw-bold">Position</div>
+                <div class="col-sm-8 text-secondary" id="info-position">
+                  Loading...
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-4 shadow-sm profile-card">
+            <div class="card-body">
+              <h5 class="card-title border-bottom pb-2 mb-3">
+                Projects Joined
+              </h5>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Project Name</th>
+                      <th>Abbr</th>
+                      <th>Start Date</th>
+                      <th>End Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="profile-projects">
+                    <tr>
+                      <td colspan="4" class="text-center">
+                        <div
+                          class="spinner-border spinner-border-sm text-primary"
+                          role="status"
+                        >
+                          <span class="visually-hidden">Loading...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {{template "partials/scripts.html" .}}
+    <script src="/static/js/services/user_service.js"></script>
+    <script src="/static/js/common/auth.js"></script>
+    <script src="/static/js/user_profile.js"></script>
+  </body>
+</html>
+{{end}}
