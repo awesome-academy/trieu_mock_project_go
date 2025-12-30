@@ -55,5 +55,12 @@ func (r *TeamMemberRepository) Create(db *gorm.DB, member *models.TeamMember) er
 }
 
 func (r *TeamMemberRepository) Update(db *gorm.DB, member *models.TeamMember) error {
-	return db.Save(member).Error
+	return db.Model(&models.TeamMember{}).
+		Where("id = ?", member.ID).
+		Updates(map[string]interface{}{
+			"team_id":   member.TeamID,
+			"user_id":   member.UserID,
+			"joined_at": member.JoinedAt,
+			"left_at":   member.LeftAt,
+		}).Error
 }

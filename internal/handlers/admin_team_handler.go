@@ -172,7 +172,8 @@ func (h *AdminTeamHandler) AddMember(c *gin.Context) {
 	if err := h.teamService.AddMemberToTeam(c.Request.Context(), uint(teamId), request.UserID); err != nil {
 		if err == appErrors.ErrTeamNotFound ||
 			err == appErrors.ErrUserNotFound ||
-			err == appErrors.ErrUserAlreadyInTeam {
+			err == appErrors.ErrUserAlreadyInTeam ||
+			err == appErrors.ErrCannotRemoveOrMoveTeamLeader {
 			appErrors.RespondError(c, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -201,7 +202,8 @@ func (h *AdminTeamHandler) RemoveMember(c *gin.Context) {
 	if err := h.teamService.RemoveMemberFromTeam(c.Request.Context(), uint(teamId), uint(userId)); err != nil {
 		if err == appErrors.ErrTeamNotFound ||
 			err == appErrors.ErrUserNotFound ||
-			err == appErrors.ErrUserNotInTeam {
+			err == appErrors.ErrUserNotInTeam ||
+			err == appErrors.ErrCannotRemoveOrMoveTeamLeader {
 			appErrors.RespondError(c, http.StatusBadRequest, err.Error())
 			return
 		}

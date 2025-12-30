@@ -160,6 +160,19 @@ func (s *TeamsService) UpdateTeam(c context.Context, id uint, req dtos.CreateOrU
 				return err
 			}
 
+			activeTeamMember, err := s.teamMemberRepository.FindActiveMemberByUserID(s.db.WithContext(c), req.LeaderID)
+			if err != nil && err != gorm.ErrRecordNotFound {
+				return err
+			}
+			if activeTeamMember != nil {
+				if activeTeamMember.TeamID == team.ID {
+					// New leader is already an active member of the team
+					return nil
+				} else {
+					return appErrors.ErrTeamLeaderAlreadyInAnotherTeam
+				}
+			}
+
 			// Add new leader as team member
 			newMember := &models.TeamMember{
 				UserID:   req.LeaderID,
@@ -167,10 +180,6 @@ func (s *TeamsService) UpdateTeam(c context.Context, id uint, req dtos.CreateOrU
 				JoinedAt: time.Now(),
 			}
 			if err := s.teamMemberRepository.Create(tx, newMember); err != nil {
-				// For team_members.ux_active_user_in_team unique constraint
-				if appErrors.IsDuplicatedEntryError(err) {
-					return appErrors.ErrTeamLeaderAlreadyInAnotherTeam
-				}
 				return err
 			}
 
@@ -225,6 +234,13 @@ func (s *TeamsService) AddMemberToTeam(c context.Context, teamID uint, userID ui
 	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
 		// If user is in another team, set left_at for left team member record
 		if activeTeamMember != nil {
+			activeTeam, err := s.teamRepository.FindByID(tx, activeTeamMember.TeamID)
+			if err != nil {
+				return err
+			}
+			if activeTeam.LeaderID == userID {
+				return appErrors.ErrCannotRemoveOrMoveTeamLeader
+			}
 			activeTeamMember.LeftAt = &now
 			if err := s.teamMemberRepository.Update(tx, activeTeamMember); err != nil {
 				return err
@@ -247,11 +263,15 @@ func (s *TeamsService) AddMemberToTeam(c context.Context, teamID uint, userID ui
 }
 
 func (s *TeamsService) RemoveMemberFromTeam(c context.Context, teamID uint, userID uint) error {
-	if _, err := s.teamRepository.FindByID(s.db.WithContext(c), teamID); err != nil {
+	team, err := s.teamRepository.FindByID(s.db.WithContext(c), teamID)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return appErrors.ErrTeamNotFound
 		}
 		return err
+	}
+	if team.LeaderID == userID {
+		return appErrors.ErrCannotRemoveOrMoveTeamLeader
 	}
 	user, err := s.userRepository.FindByID(s.db.WithContext(c), userID)
 	if err != nil {

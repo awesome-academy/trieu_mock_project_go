@@ -28,7 +28,8 @@ var (
 	ErrTeamLeaderAlreadyInAnotherTeam = errors.New("team leader is already leading another team")
 	ErrTeamNotFound                   = errors.New("team not found")
 	ErrUserAlreadyInTeam              = errors.New("user is already a member of the team")
-	ErrUserNotInTeam				  = errors.New("user is not a member of the team")
+	ErrUserNotInTeam                  = errors.New("user is not a member of the team")
+	ErrCannotRemoveOrMoveTeamLeader   = errors.New("cannot remove or move the team leader from the team")
 )
 
 // Error response

@@ -66,7 +66,13 @@ func (r *TeamsRepository) Create(db *gorm.DB, team *models.Team) error {
 }
 
 func (r *TeamsRepository) Update(db *gorm.DB, team *models.Team) error {
-	return db.Save(team).Error
+	return db.Model(&models.Team{}).
+		Where("id = ?", team.ID).
+		Updates(map[string]interface{}{
+			"name":        team.Name,
+			"description": team.Description,
+			"leader_id":   team.LeaderID,
+		}).Error
 }
 
 func (r *TeamsRepository) Delete(db *gorm.DB, id uint) error {

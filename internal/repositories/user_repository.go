@@ -85,7 +85,16 @@ func (r *UserRepository) CreateUserSkills(db *gorm.DB, userSkills []models.UserS
 }
 
 func (r *UserRepository) UpdateUser(db *gorm.DB, user *models.User) error {
-	return db.Save(user).Error
+	return db.Model(&models.User{}).
+		Where("id = ?", user.ID).
+		Updates(map[string]interface{}{
+			"name":            user.Name,
+			"email":           user.Email,
+			"birthday":        user.Birthday,
+			"current_team_id": user.CurrentTeamID,
+			"position_id":     user.PositionID,
+			"role":            user.Role,
+		}).Error
 }
 
 func (r *UserRepository) UpdateUserSkills(db *gorm.DB, userID uint, skills []models.UserSkill) error {
