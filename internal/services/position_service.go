@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"strings"
+	"trieu_mock_project_go/helpers"
 	"trieu_mock_project_go/internal/dtos"
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/repositories"
@@ -26,14 +27,7 @@ func (s *PositionService) GetAllPositionsSummary(c context.Context) []dtos.Posit
 		return []dtos.PositionSummary{}
 	}
 
-	positionDtos := make([]dtos.PositionSummary, 0, len(positions))
-	for _, position := range positions {
-		positionDtos = append(positionDtos, dtos.PositionSummary{
-			ID:   position.ID,
-			Name: position.Name,
-		})
-	}
-	return positionDtos
+	return helpers.MapPositionsToPositionSummaries(positions)
 }
 
 func (s *PositionService) SearchPositions(c context.Context, limit, offset int) (*dtos.PositionSearchResponse, error) {
@@ -42,17 +36,8 @@ func (s *PositionService) SearchPositions(c context.Context, limit, offset int) 
 		return nil, err
 	}
 
-	positionDtos := make([]dtos.Position, 0, len(positions))
-	for _, p := range positions {
-		positionDtos = append(positionDtos, dtos.Position{
-			ID:           p.ID,
-			Name:         p.Name,
-			Abbreviation: p.Abbreviation,
-		})
-	}
-
 	return &dtos.PositionSearchResponse{
-		Positions: positionDtos,
+		Positions: helpers.MapPositionsToPositionDtos(positions),
 		Page: dtos.PaginationResponse{
 			Limit:  limit,
 			Offset: offset,
@@ -70,11 +55,7 @@ func (s *PositionService) GetPositionByID(c context.Context, id uint) (*dtos.Pos
 		return nil, err
 	}
 
-	return &dtos.Position{
-		ID:           position.ID,
-		Name:         position.Name,
-		Abbreviation: position.Abbreviation,
-	}, nil
+	return helpers.MapPositionToPositionDto(position), nil
 }
 
 func (s *PositionService) CreatePosition(c context.Context, req dtos.CreateOrUpdatePositionRequest) error {
