@@ -50,6 +50,17 @@ func RespondError(
 	})
 }
 
+func RespondPageError(
+	c *gin.Context,
+	status int,
+	templateName string,
+	message string,
+) {
+	c.HTML(status, templateName, gin.H{
+		"error": message,
+	})
+}
+
 func HandleBindError(c *gin.Context, err error) bool {
 	if err == nil {
 		return false

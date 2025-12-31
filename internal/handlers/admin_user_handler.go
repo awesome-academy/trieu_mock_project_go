@@ -40,50 +40,42 @@ func (h *AdminUserHandler) AdminUsersPage(c *gin.Context) {
 }
 
 func (h *AdminUserHandler) AdminUsersSearchPartial(c *gin.Context) {
+	templateName := "partials/admin_users_search.html"
 	var query dtos.UserSearchRequest
 	if err := c.ShouldBindQuery(&query); err != nil {
-		c.HTML(http.StatusBadRequest, "partials/admin_users_search.html", gin.H{
-			"error": "Invalid query parameters",
-		})
+		appErrors.RespondPageError(c, http.StatusBadRequest, templateName, "Invalid query parameters")
 		return
 	}
 
 	resp, err := h.userService.SearchUsers(c.Request.Context(), query.TeamId, query.Limit, query.Offset)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "partials/admin_users_search.html", gin.H{
-			"error": "Failed to load users",
-		})
+		appErrors.RespondPageError(c, http.StatusInternalServerError, templateName, "Failed to load users")
 		return
 	}
 
-	c.HTML(http.StatusOK, "partials/admin_users_search.html", gin.H{
+	c.HTML(http.StatusOK, templateName, gin.H{
 		"users": resp.Users,
 		"page":  resp.Page,
 	})
 }
 
 func (h *AdminUserHandler) AdminUserDetailPage(c *gin.Context) {
+	templateName := "pages/admin_user_detail.html"
 	userIdParam := c.Param("userId")
 
 	userId, err := strconv.Atoi(userIdParam)
 	if err != nil {
-		c.HTML(http.StatusBadRequest, "pages/admin_user_detail.html", gin.H{
-			"title": "User Detail",
-			"error": "Invalid user ID",
-		})
+		appErrors.RespondPageError(c, http.StatusBadRequest, templateName, "Invalid user ID")
 		return
 	}
 
 	userProfile, err := h.userService.GetUserProfile(c.Request.Context(), uint(userId))
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "pages/admin_user_detail.html", gin.H{
-			"title": "User Detail",
-			"error": "Failed to load user details",
-		})
+		appErrors.RespondPageError(c, http.StatusInternalServerError, templateName, "Failed to load user details")
 		return
 	}
 
-	c.HTML(http.StatusOK, "pages/admin_user_detail.html", gin.H{
+	c.HTML(http.StatusOK, templateName, gin.H{
 		"title":     "User Detail",
 		"user":      userProfile,
 		"csrfToken": csrf.GetToken(c),
@@ -123,23 +115,18 @@ func (h *AdminUserHandler) CreateUser(c *gin.Context) {
 }
 
 func (h *AdminUserHandler) AdminUserEditPage(c *gin.Context) {
+	templateName := "pages/admin_user_edit.html"
 	userIdParam := c.Param("userId")
 
 	userId, err := strconv.Atoi(userIdParam)
 	if err != nil {
-		c.HTML(http.StatusBadRequest, "pages/admin_user_edit.html", gin.H{
-			"title": "Edit User",
-			"error": "Invalid user ID",
-		})
+		appErrors.RespondPageError(c, http.StatusBadRequest, templateName, "Invalid user ID")
 		return
 	}
 
 	userProfile, err := h.userService.GetUserProfile(c.Request.Context(), uint(userId))
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "pages/admin_user_edit.html", gin.H{
-			"title": "Edit User",
-			"error": "Failed to load user details",
-		})
+		appErrors.RespondPageError(c, http.StatusInternalServerError, templateName, "Failed to load user details")
 		return
 	}
 
@@ -147,7 +134,7 @@ func (h *AdminUserHandler) AdminUserEditPage(c *gin.Context) {
 	positions := h.positionService.GetAllPositionsSummary(c.Request.Context())
 	skills := h.skillService.GetAllSkillsSummary(c.Request.Context())
 
-	c.HTML(http.StatusOK, "pages/admin_user_edit.html", gin.H{
+	c.HTML(http.StatusOK, templateName, gin.H{
 		"title":     "Edit User",
 		"user":      userProfile,
 		"teams":     allTeams,
