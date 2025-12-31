@@ -27,23 +27,20 @@ func (h *AdminSkillHandler) ListSkillPage(c *gin.Context) {
 }
 
 func (h *AdminSkillHandler) SkillSearchPartial(c *gin.Context) {
+	templateName := "partials/admin_skills_search.html"
 	var requestQuery dtos.PaginationRequestQuery
 	if err := c.ShouldBindQuery(&requestQuery); err != nil {
-		c.HTML(http.StatusBadRequest, "partials/admin_skills_search.html", gin.H{
-			"error": "Invalid query parameters",
-		})
+		appErrors.RespondPageError(c, http.StatusBadRequest, templateName, "Invalid query parameters")
 		return
 	}
 
 	resp, err := h.skillService.SearchSkills(c.Request.Context(), requestQuery.Limit, requestQuery.Offset)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "partials/admin_skills_search.html", gin.H{
-			"error": "Failed to load skills",
-		})
+		appErrors.RespondPageError(c, http.StatusInternalServerError, templateName, "Failed to load skills")
 		return
 	}
 
-	c.HTML(http.StatusOK, "partials/admin_skills_search.html", gin.H{
+	c.HTML(http.StatusOK, templateName, gin.H{
 		"skills": resp.Skills,
 		"page":   resp.Page,
 	})
@@ -63,11 +60,7 @@ func (h *AdminSkillHandler) CreateSkill(c *gin.Context) {
 	}
 
 	if err := h.skillService.CreateSkill(c.Request.Context(), request); err != nil {
-		if err == appErrors.ErrSkillAlreadyExists {
-			appErrors.RespondError(c, http.StatusConflict, err.Error())
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to create skill")
+		appErrors.RespondCustomError(c, err, "Failed to create skill")
 		return
 	}
 
@@ -75,26 +68,21 @@ func (h *AdminSkillHandler) CreateSkill(c *gin.Context) {
 }
 
 func (h *AdminSkillHandler) EditSkillPage(c *gin.Context) {
+	templateName := "pages/admin_skill_edit.html"
 	skillIdParam := c.Param("skillId")
 	skillId, err := strconv.Atoi(skillIdParam)
 	if err != nil {
-		c.HTML(http.StatusBadRequest, "pages/admin_skill_edit.html", gin.H{
-			"title": "Edit Skill",
-			"error": "Invalid skill ID",
-		})
+		appErrors.RespondPageError(c, http.StatusBadRequest, templateName, "Invalid skill ID")
 		return
 	}
 
 	skill, err := h.skillService.GetSkillByID(c.Request.Context(), uint(skillId))
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "pages/admin_skill_edit.html", gin.H{
-			"title": "Edit Skill",
-			"error": "Skill not found",
-		})
+		appErrors.RespondPageError(c, http.StatusInternalServerError, templateName, "Failed to load skill")
 		return
 	}
 
-	c.HTML(http.StatusOK, "pages/admin_skill_edit.html", gin.H{
+	c.HTML(http.StatusOK, templateName, gin.H{
 		"title":     "Edit Skill",
 		"skill":     skill,
 		"csrfToken": csrf.GetToken(c),
@@ -115,15 +103,7 @@ func (h *AdminSkillHandler) UpdateSkill(c *gin.Context) {
 	}
 
 	if err := h.skillService.UpdateSkill(c.Request.Context(), uint(skillId), request); err != nil {
-		if err == appErrors.ErrNotFound {
-			appErrors.RespondError(c, http.StatusNotFound, "Skill not found")
-			return
-		}
-		if err == appErrors.ErrSkillAlreadyExists {
-			appErrors.RespondError(c, http.StatusConflict, err.Error())
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to update skill")
+		appErrors.RespondCustomError(c, err, "Failed to update skill")
 		return
 	}
 
@@ -139,15 +119,7 @@ func (h *AdminSkillHandler) DeleteSkill(c *gin.Context) {
 	}
 
 	if err := h.skillService.DeleteSkill(c.Request.Context(), uint(skillId)); err != nil {
-		if err == appErrors.ErrNotFound {
-			appErrors.RespondError(c, http.StatusNotFound, "Skill not found")
-			return
-		}
-		if err == appErrors.ErrSkillInUse {
-			appErrors.RespondError(c, http.StatusConflict, err.Error())
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to delete skill")
+		appErrors.RespondCustomError(c, err, "Failed to delete skill")
 		return
 	}
 

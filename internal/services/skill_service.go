@@ -33,7 +33,7 @@ func (s *SkillService) GetAllSkillsSummary(c context.Context) []dtos.SkillSummar
 func (s *SkillService) SearchSkills(c context.Context, limit, offset int) (*dtos.SkillSearchResponse, error) {
 	skills, totalCount, err := s.skillRepository.SearchSkills(s.db.WithContext(c), limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, appErrors.ErrInternalServerError
 	}
 
 	return &dtos.SkillSearchResponse{
@@ -50,9 +50,9 @@ func (s *SkillService) GetSkillByID(c context.Context, id uint) (*dtos.SkillSumm
 	skill, err := s.skillRepository.FindByID(s.db.WithContext(c), id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, appErrors.ErrNotFound
+			return nil, appErrors.ErrSkillNotFound
 		}
-		return nil, err
+		return nil, appErrors.ErrInternalServerError
 	}
 
 	return helpers.MapSkillToSkillSummary(skill), nil
@@ -63,49 +63,55 @@ func (s *SkillService) CreateSkill(c context.Context, req dtos.CreateOrUpdateSki
 		Name: strings.TrimSpace(req.Name),
 	}
 
-	err := s.skillRepository.Create(s.db.WithContext(c), skill)
-
-	if err != nil && appErrors.IsDuplicatedEntryError(err) {
-		return appErrors.ErrSkillAlreadyExists
+	if err := s.skillRepository.Create(s.db.WithContext(c), skill); err != nil {
+		if appErrors.IsDuplicatedEntryError(err) {
+			return appErrors.ErrSkillAlreadyExists
+		}
+		return appErrors.ErrInternalServerError
 	}
-	return err
+	return nil
 }
 
 func (s *SkillService) UpdateSkill(c context.Context, id uint, req dtos.CreateOrUpdateSkillRequest) error {
 	currentSkill, err := s.skillRepository.FindByID(s.db.WithContext(c), id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return appErrors.ErrNotFound
+			return appErrors.ErrSkillNotFound
 		}
-
-		return err
+		return appErrors.ErrInternalServerError
 	}
 
 	currentSkill.Name = strings.TrimSpace(req.Name)
 
-	err = s.skillRepository.Update(s.db.WithContext(c), currentSkill)
-	if err != nil && appErrors.IsDuplicatedEntryError(err) {
-		return appErrors.ErrSkillAlreadyExists
+	if err := s.skillRepository.Update(s.db.WithContext(c), currentSkill); err != nil {
+		if appErrors.IsDuplicatedEntryError(err) {
+			return appErrors.ErrSkillAlreadyExists
+		}
+		return appErrors.ErrInternalServerError
 	}
-	return err
+	return nil
 }
 
 func (s *SkillService) DeleteSkill(c context.Context, id uint) error {
 	_, err := s.skillRepository.FindByID(s.db.WithContext(c), id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return appErrors.ErrNotFound
+			return appErrors.ErrSkillNotFound
 		}
-		return err
+		return appErrors.ErrInternalServerError
 	}
 
 	existedUserUseSkill, err := s.skillRepository.ExistsUsersWithSkillID(s.db.WithContext(c), id)
 	if err != nil {
-		return err
+		return appErrors.ErrInternalServerError
 	}
 	if existedUserUseSkill {
 		return appErrors.ErrSkillInUse
 	}
 
-	return s.skillRepository.Delete(s.db.WithContext(c), id)
+	if err := s.skillRepository.Delete(s.db.WithContext(c), id); err != nil {
+		return appErrors.ErrInternalServerError
+	}
+
+	return nil
 }

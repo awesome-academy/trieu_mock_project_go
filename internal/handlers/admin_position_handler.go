@@ -27,23 +27,20 @@ func (h *AdminPositionHandler) ListPositionPage(c *gin.Context) {
 }
 
 func (h *AdminPositionHandler) PositionSearchPartial(c *gin.Context) {
+	templateName := "partials/admin_positions_search.html"
 	var requestQuery dtos.PaginationRequestQuery
 	if err := c.ShouldBindQuery(&requestQuery); err != nil {
-		c.HTML(http.StatusBadRequest, "partials/admin_positions_search.html", gin.H{
-			"error": "Invalid query parameters",
-		})
+		appErrors.RespondPageError(c, http.StatusBadRequest, templateName, "Invalid query parameters")
 		return
 	}
 
 	resp, err := h.positionsService.SearchPositions(c.Request.Context(), requestQuery.Limit, requestQuery.Offset)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "partials/admin_positions_search.html", gin.H{
-			"error": "Failed to load positions",
-		})
+		appErrors.RespondPageError(c, http.StatusInternalServerError, templateName, "Failed to load positions")
 		return
 	}
 
-	c.HTML(http.StatusOK, "partials/admin_positions_search.html", gin.H{
+	c.HTML(http.StatusOK, templateName, gin.H{
 		"positions": resp.Positions,
 		"page":      resp.Page,
 	})
@@ -63,11 +60,7 @@ func (h *AdminPositionHandler) CreatePosition(c *gin.Context) {
 	}
 
 	if err := h.positionsService.CreatePosition(c.Request.Context(), request); err != nil {
-		if err == appErrors.ErrPositionAlreadyExists {
-			appErrors.RespondError(c, http.StatusConflict, err.Error())
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to create position")
+		appErrors.RespondCustomError(c, err, "Failed to create position")
 		return
 	}
 
@@ -75,28 +68,23 @@ func (h *AdminPositionHandler) CreatePosition(c *gin.Context) {
 }
 
 func (h *AdminPositionHandler) EditPositionPage(c *gin.Context) {
+	templateName := "pages/admin_position_edit.html"
 	positionIdParam := c.Param("positionId")
 	positionId, err := strconv.Atoi(positionIdParam)
 	if err != nil {
-		c.HTML(http.StatusBadRequest, "pages/admin_position_edit.html", gin.H{
-			"title": "Edit Position",
-			"error": "Invalid position ID",
-		})
+		appErrors.RespondPageError(c, http.StatusBadRequest, templateName, "Invalid position ID")
 		return
 	}
 
 	position, err := h.positionsService.GetPositionByID(c.Request.Context(), uint(positionId))
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "pages/admin_position_edit.html", gin.H{
-			"title": "Edit Position",
-			"error": "Position not found",
-		})
+		appErrors.RespondPageError(c, http.StatusInternalServerError, templateName, "Position not found")
 		return
 	}
 
-	c.HTML(http.StatusOK, "pages/admin_position_edit.html", gin.H{
-		"title":    "Edit Position",
-		"position": position,
+	c.HTML(http.StatusOK, templateName, gin.H{
+		"title":     "Edit Position",
+		"position":  position,
 		"csrfToken": csrf.GetToken(c),
 	})
 }
@@ -105,7 +93,7 @@ func (h *AdminPositionHandler) UpdatePosition(c *gin.Context) {
 	positionIdParam := c.Param("positionId")
 	positionId, err := strconv.Atoi(positionIdParam)
 	if err != nil {
-		appErrors.RespondError(c, http.StatusBadRequest, "Invalid position ID")
+		appErrors.RespondCustomError(c, err, "Invalid position ID")
 		return
 	}
 
@@ -115,15 +103,7 @@ func (h *AdminPositionHandler) UpdatePosition(c *gin.Context) {
 	}
 
 	if err := h.positionsService.UpdatePosition(c.Request.Context(), uint(positionId), request); err != nil {
-		if err == appErrors.ErrNotFound {
-			appErrors.RespondError(c, http.StatusNotFound, "Position not found")
-			return
-		}
-		if err == appErrors.ErrPositionAlreadyExists {
-			appErrors.RespondError(c, http.StatusConflict, err.Error())
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to update position")
+		appErrors.RespondCustomError(c, err, "Failed to update position")
 		return
 	}
 
@@ -139,11 +119,7 @@ func (h *AdminPositionHandler) DeletePosition(c *gin.Context) {
 	}
 
 	if err := h.positionsService.DeletePosition(c.Request.Context(), uint(positionId)); err != nil {
-		if err == appErrors.ErrNotFound {
-			appErrors.RespondError(c, http.StatusNotFound, "Position not found")
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to delete position")
+		appErrors.RespondCustomError(c, err, "Failed to delete position")
 		return
 	}
 
