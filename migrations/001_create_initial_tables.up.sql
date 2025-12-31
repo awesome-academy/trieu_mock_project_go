@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS `positions` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+CREATE UNIQUE INDEX `idx_positions_name` ON `positions` (`name`);
 
 -- Create users table
 CREATE TABLE IF NOT EXISTS `users` (

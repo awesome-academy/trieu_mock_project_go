@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"trieu_mock_project_go/helpers"
 	"trieu_mock_project_go/internal/dtos"
 	"trieu_mock_project_go/internal/repositories"
 
@@ -23,15 +24,5 @@ func (s *ProjectService) GetAllProjectSummary(c context.Context) []dtos.ProjectS
 		return []dtos.ProjectSummary{}
 	}
 
-	projectDtos := make([]dtos.ProjectSummary, 0, len(projects))
-	for _, project := range projects {
-		projectDtos = append(projectDtos, dtos.ProjectSummary{
-			ID:           project.ID,
-			Name:         project.Name,
-			Abbreviation: project.Abbreviation,
-			StartDate:    project.StartDate,
-			EndDate:      project.EndDate,
-		})
-	}
-	return projectDtos
+	return helpers.MapProjectsToProjectSummaries(projects)
 }

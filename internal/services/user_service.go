@@ -38,21 +38,8 @@ func (s *UserService) SearchUsers(c context.Context, teamId *uint, limit, offset
 		return nil, err
 	}
 
-	userDtos := make([]dtos.UserDataForSearch, 0, len(users))
-	if len(users) > 0 {
-		for _, user := range users {
-			userDtos = append(
-				userDtos,
-				dtos.UserDataForSearch{
-					ID:    user.ID,
-					Name:  user.Name,
-					Email: user.Email,
-				})
-		}
-	}
-
 	response := &dtos.UserSearchResponse{
-		Users: userDtos,
+		Users: helpers.MapUsersToUserDataForSearches(users),
 		Page: dtos.PaginationResponse{
 			Limit:  limit,
 			Offset: offset,

@@ -32,9 +32,13 @@ document.addEventListener("DOMContentLoaded", function () {
     paginationLinks.forEach((link) => {
       link.addEventListener("click", function (e) {
         e.preventDefault();
-        const offset = this.getAttribute("data-offset");
-        if (offset !== null) {
-          loadUsers(parseInt(offset));
+
+        const offsetAttr = this.getAttribute("data-offset");
+        if (offsetAttr !== null) {
+          const offset = parseInt(offsetAttr, 10);
+          if (!Number.isNaN(offset) && offset >= 0) {
+            loadUsers(offset);
+          }
         }
       });
     });

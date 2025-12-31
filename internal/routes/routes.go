@@ -36,7 +36,9 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 	adminGroup := router.Group("/admin")
 	adminGroup.Use(appContainer.AdminAuthMiddleware)
 	{
+		// Admin dashboard
 		adminGroup.GET("/", appContainer.AdminDashboardHandler.AdminDashboardPage)
+		// Admin user management
 		adminGroup.GET("/users", appContainer.AdminUserHandler.AdminUsersPage)
 		adminGroup.GET("/users/partial/search", appContainer.AdminUserHandler.AdminUsersSearchPartial)
 		adminGroup.GET("/users/create", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.AdminUserCreatePage)
@@ -45,5 +47,13 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 		adminGroup.GET("/users/:userId/edit", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.AdminUserEditPage)
 		adminGroup.PUT("/users/:userId", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.UpdateUser)
 		adminGroup.DELETE("/users/:userId", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.DeleteUser)
+		// Admin position management
+		adminGroup.GET("/positions", appContainer.CSRFMiddleware, appContainer.AdminPositionHandler.ListPositionPage)
+		adminGroup.GET("/positions/partial/search", appContainer.AdminPositionHandler.PositionSearchPartial)
+		adminGroup.GET("/positions/create", appContainer.CSRFMiddleware, appContainer.AdminPositionHandler.CreatePositionPage)
+		adminGroup.POST("/positions", appContainer.CSRFMiddleware, appContainer.AdminPositionHandler.CreatePosition)
+		adminGroup.GET("/positions/:positionId/edit", appContainer.CSRFMiddleware, appContainer.AdminPositionHandler.EditPositionPage)
+		adminGroup.PUT("/positions/:positionId", appContainer.CSRFMiddleware, appContainer.AdminPositionHandler.UpdatePosition)
+		adminGroup.DELETE("/positions/:positionId", appContainer.CSRFMiddleware, appContainer.AdminPositionHandler.DeletePosition)
 	}
 }

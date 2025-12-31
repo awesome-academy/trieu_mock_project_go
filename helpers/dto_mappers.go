@@ -154,3 +154,59 @@ func MapTeamMembersToTeamMemberSummaries(members []models.TeamMember) []dtos.Tea
 	}
 	return teamMemberSummaries
 }
+
+func MapPositionToPositionSummary(position *models.Position) *dtos.PositionSummary {
+	if position == nil {
+		return nil
+	}
+	return &dtos.PositionSummary{
+		ID:   position.ID,
+		Name: position.Name,
+	}
+}
+
+func MapPositionsToPositionSummaries(positions []models.Position) []dtos.PositionSummary {
+	summaries := make([]dtos.PositionSummary, 0, len(positions))
+	for _, position := range positions {
+		summaries = append(summaries, *MapPositionToPositionSummary(&position))
+	}
+	return summaries
+}
+
+func MapPositionToPositionDto(position *models.Position) *dtos.Position {
+	if position == nil {
+		return nil
+	}
+	return &dtos.Position{
+		ID:           position.ID,
+		Name:         position.Name,
+		Abbreviation: position.Abbreviation,
+	}
+}
+
+func MapPositionsToPositionDtos(positions []models.Position) []dtos.Position {
+	positionDtos := make([]dtos.Position, 0, len(positions))
+	for _, position := range positions {
+		positionDtos = append(positionDtos, *MapPositionToPositionDto(&position))
+	}
+	return positionDtos
+}
+
+func MapUserToUserDataForSearch(user *models.User) *dtos.UserDataForSearch {
+	if user == nil {
+		return nil
+	}
+	return &dtos.UserDataForSearch{
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
+	}
+}
+
+func MapUsersToUserDataForSearches(users []models.User) []dtos.UserDataForSearch {
+	userDtos := make([]dtos.UserDataForSearch, 0, len(users))
+	for _, user := range users {
+		userDtos = append(userDtos, *MapUserToUserDataForSearch(&user))
+	}
+	return userDtos
+}

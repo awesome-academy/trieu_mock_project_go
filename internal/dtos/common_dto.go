@@ -18,12 +18,6 @@ type PositionSummary struct {
 	Name string `json:"name"`
 }
 
-type Position struct {
-	ID           uint   `json:"id"`
-	Name         string `json:"name"`
-	Abbreviation string `json:"abbreviation"`
-}
-
 type ProjectSummary struct {
 	ID           uint       `json:"id"`
 	Name         string     `json:"name"`
