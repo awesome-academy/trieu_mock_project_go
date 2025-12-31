@@ -70,6 +70,7 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 		adminGroup.GET("/teams/create", appContainer.CSRFMiddleware, appContainer.AdminTeamHandler.CreateTeamPage)
 		adminGroup.POST("/teams", appContainer.CSRFMiddleware, appContainer.AdminTeamHandler.CreateTeam)
 		adminGroup.GET("/teams/:teamId/edit", appContainer.CSRFMiddleware, appContainer.AdminTeamHandler.EditTeamPage)
+		adminGroup.GET("/teams/:teamId/history/partial", appContainer.AdminTeamHandler.TeamMemberHistoryPartial)
 		adminGroup.PUT("/teams/:teamId", appContainer.CSRFMiddleware, appContainer.AdminTeamHandler.UpdateTeam)
 		adminGroup.DELETE("/teams/:teamId", appContainer.CSRFMiddleware, appContainer.AdminTeamHandler.DeleteTeam)
 		adminGroup.POST("/teams/:teamId/members", appContainer.CSRFMiddleware, appContainer.AdminTeamHandler.AddMember)

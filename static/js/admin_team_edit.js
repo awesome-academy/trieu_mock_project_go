@@ -13,8 +13,37 @@ document.addEventListener("DOMContentLoaded", function () {
   const memberSearchResults = document.getElementById("memberSearchResults");
   const memberList = document.getElementById("memberList");
   const noMembersRow = document.getElementById("noMembersRow");
+  const historyContainer = document.getElementById("historyContainer");
 
   let searchTimeout;
+
+  // History Pagination and Loading
+  async function loadHistory(offset = 0) {
+    try {
+      const response = await fetch(
+        `/admin/teams/${teamId}/history/partial?offset=${offset}&limit=10`
+      );
+      const html = await response.text();
+      historyContainer.innerHTML = html;
+      attachHistoryPaginationEvents();
+    } catch (error) {
+      console.error("Failed to load history:", error);
+    }
+  }
+
+  function attachHistoryPaginationEvents() {
+    const paginationLinks =
+      historyContainer.querySelectorAll(".history-page-link");
+    paginationLinks.forEach((link) => {
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        const offset = e.target.getAttribute("data-offset");
+        loadHistory(offset);
+      });
+    });
+  }
+
+  attachHistoryPaginationEvents();
 
   // Leader Search Logic
   leaderSearch.addEventListener("focus", function () {
@@ -118,6 +147,9 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       await AdminTeamService.addMember(teamId, user.id);
 
+      // Reload history immediately to reflect the change
+      loadHistory();
+
       // Update UI
       if (noMembersRow) noMembersRow.remove();
 
@@ -159,6 +191,8 @@ document.addEventListener("DOMContentLoaded", function () {
             memberList.innerHTML =
               '<tr id="noMembersRow"><td colspan="2" class="text-center">No members in this team</td></tr>';
           }
+          // Reload history
+          loadHistory();
         } catch (error) {
           alert(error.message);
         }

@@ -1,0 +1,74 @@
+{{define "partials/admin_team_member_history.html"}} {{if .error}}
+<div class="alert alert-danger">{{.error}}</div>
+{{else}}
+<div class="table-responsive">
+  <table class="table table-sm table-hover">
+    <thead>
+      <tr>
+        <th>User Name</th>
+        <th>Joined At</th>
+        <th>Left At</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .history}}
+      <tr>
+        <td>{{.UserName}}</td>
+        <td>{{.JoinedAt.Format "2006-01-02 15:04:05"}}</td>
+        <td>
+          {{if .LeftAt}} {{.LeftAt.Format "2006-01-02 15:04:05"}} {{else}} -
+          {{end}}
+        </td>
+        <td>
+          {{if .LeftAt}}
+          <span class="badge bg-secondary">Left</span>
+          {{else}}
+          <span class="badge bg-success">Active</span>
+          {{end}}
+        </td>
+      </tr>
+      {{else}}
+      <tr>
+        <td colspan="4" class="text-center">No history found</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+
+{{if gt .page.Total 0}}
+<nav aria-label="History pagination">
+  <ul class="pagination justify-content-center">
+    {{$currentOffset := .page.Offset}} {{$limit := .page.Limit}} {{$total :=
+    .page.Total}}
+
+    <li class="page-item {{if le $currentOffset 0}}disabled{{end}}">
+      <a
+        class="page-link history-page-link"
+        href="#"
+        data-offset="{{sub $currentOffset $limit}}"
+        >Previous</a
+      >
+    </li>
+
+    <li class="page-item disabled">
+      <span class="page-link">
+        Showing {{add $currentOffset 1}} to {{min (int64 (add $currentOffset
+        $limit)) $total}} of {{$total}}
+      </span>
+    </li>
+
+    <li
+      class="page-item {{if ge (int64 (add $currentOffset $limit)) $total}}disabled{{end}}"
+    >
+      <a
+        class="page-link history-page-link"
+        href="#"
+        data-offset="{{add $currentOffset $limit}}"
+        >Next</a
+      >
+    </li>
+  </ul>
+</nav>
+{{end}} {{end}} {{end}}

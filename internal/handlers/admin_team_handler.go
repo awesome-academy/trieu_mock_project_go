@@ -104,10 +104,57 @@ func (h *AdminTeamHandler) EditTeamPage(c *gin.Context) {
 		return
 	}
 
+	historyResp, err := h.teamService.GetTeamMemberHistory(c.Request.Context(), uint(teamId), 10, 0)
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "pages/admin_team_edit.html", gin.H{
+			"title": "Edit Team",
+			"error": "Failed to load team member history",
+		})
+		return
+	}
+
 	c.HTML(http.StatusOK, "pages/admin_team_edit.html", gin.H{
 		"title":     "Edit Team",
 		"team":      team,
+		"history":   historyResp.History,
+		"page":      historyResp.Page,
 		"csrfToken": csrf.GetToken(c),
+	})
+}
+
+func (h *AdminTeamHandler) TeamMemberHistoryPartial(c *gin.Context) {
+	teamIdParam := c.Param("teamId")
+	teamId, err := strconv.Atoi(teamIdParam)
+	if err != nil {
+		c.HTML(http.StatusBadRequest, "partials/admin_team_member_history.html", gin.H{
+			"error": "Invalid team ID",
+		})
+		return
+	}
+
+	var requestQuery dtos.PaginationRequestQuery
+	if err := c.ShouldBindQuery(&requestQuery); err != nil {
+		c.HTML(http.StatusBadRequest, "partials/admin_team_member_history.html", gin.H{
+			"error": "Invalid query parameters",
+		})
+		return
+	}
+
+	if requestQuery.Limit == 0 {
+		requestQuery.Limit = 10
+	}
+
+	resp, err := h.teamService.GetTeamMemberHistory(c.Request.Context(), uint(teamId), requestQuery.Limit, requestQuery.Offset)
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "partials/admin_team_member_history.html", gin.H{
+			"error": "Failed to load history",
+		})
+		return
+	}
+
+	c.HTML(http.StatusOK, "partials/admin_team_member_history.html", gin.H{
+		"history": resp.History,
+		"page":    resp.Page,
 	})
 }
 

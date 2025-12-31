@@ -81,6 +81,27 @@ func (s *TeamsService) GetTeamMembers(c context.Context, teamID uint, limit, off
 	return response, nil
 }
 
+func (s *TeamsService) GetTeamMemberHistory(c context.Context, teamID uint, limit, offset int) (*dtos.ListTeamMemberHistoryResponse, error) {
+	members, err := s.teamMemberRepository.FindTeamMembersByTeamID(s.db.WithContext(c), teamID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	totalCount, err := s.teamMemberRepository.CountTeamMembersByTeamID(s.db.WithContext(c), teamID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dtos.ListTeamMemberHistoryResponse{
+		History: helpers.MapTeamMembersToTeamMemberHistories(members),
+		Page: dtos.PaginationResponse{
+			Limit:  limit,
+			Offset: offset,
+			Total:  totalCount,
+		},
+	}, nil
+}
+
 func (s *TeamsService) GetAllTeamsSummary(c context.Context) []dtos.TeamSummary {
 	teams, err := s.teamRepository.FindAllTeamsSummary(s.db.WithContext(c))
 	if err != nil {

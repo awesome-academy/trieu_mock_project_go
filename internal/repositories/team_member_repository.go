@@ -38,6 +38,32 @@ func (r *TeamMemberRepository) CountMembersByTeamID(db *gorm.DB, teamID uint) (i
 	return count, nil
 }
 
+func (r *TeamMemberRepository) FindTeamMembersByTeamID(db *gorm.DB, teamID uint, limit, offset int) ([]models.TeamMember, error) {
+	var members []models.TeamMember
+	result := db.
+		Preload("User").
+		Where("team_id = ?", teamID).
+		Order("joined_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&members)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return members, nil
+}
+
+func (r *TeamMemberRepository) CountTeamMembersByTeamID(db *gorm.DB, teamID uint) (int64, error) {
+	var count int64
+	result := db.Model(&models.TeamMember{}).
+		Where("team_id = ?", teamID).
+		Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
+}
+
 func (r *TeamMemberRepository) FindActiveMemberByUserID(db *gorm.DB, userID uint) (*models.TeamMember, error) {
 	var member models.TeamMember
 	result := db.Where("user_id = ? AND left_at IS NULL", userID).First(&member)
