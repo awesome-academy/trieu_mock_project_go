@@ -15,10 +15,11 @@ import (
 type UserService struct {
 	db             *gorm.DB
 	userRepository *repositories.UserRepository
+	teamRepository *repositories.TeamsRepository
 }
 
-func NewUserService(db *gorm.DB, userRepository *repositories.UserRepository) *UserService {
-	return &UserService{db: db, userRepository: userRepository}
+func NewUserService(db *gorm.DB, userRepository *repositories.UserRepository, teamRepository *repositories.TeamsRepository) *UserService {
+	return &UserService{db: db, userRepository: userRepository, teamRepository: teamRepository}
 }
 
 func (s *UserService) GetUserProfile(c context.Context, id uint) (*dtos.UserProfile, error) {
@@ -160,6 +161,14 @@ func (s *UserService) DeleteUser(c context.Context, id uint) error {
 			return appErrors.ErrUserNotFound
 		}
 		return appErrors.ErrInternalServerError
+	}
+
+	exist, err := s.teamRepository.ExistByLeaderId(s.db.WithContext(c), id)
+	if err != nil {
+		return appErrors.ErrInternalServerError
+	}
+	if exist {
+		return appErrors.ErrCannotDeleteUserBeingTeamLeader
 	}
 
 	if err := s.db.WithContext(c).Delete(&models.User{}, id).Error; err != nil {

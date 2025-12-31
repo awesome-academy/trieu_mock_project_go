@@ -49,7 +49,7 @@ func NewAppContainer() *AppContainer {
 
 	// Initialize services
 	authService := services.NewAuthService(config.DB, userRepo)
-	userService := services.NewUserService(config.DB, userRepo)
+	userService := services.NewUserService(config.DB, userRepo, teamsRepo)
 	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo, userRepo)
 	positionService := services.NewPositionService(config.DB, positionRepo)
 	projectService := services.NewProjectService(config.DB, projectRepo)

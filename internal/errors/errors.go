@@ -9,30 +9,44 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
+type AppError struct {
+	Status  int
+	Message string
+}
+
+func (e *AppError) Error() string {
+	return e.Message
+}
+
+func NewAppError(status int, message string) *AppError {
+	return &AppError{Status: status, Message: message}
+}
+
 // Errors definitions
 var (
-	ErrInternalServerError            = errors.New("internal server error")
-	ErrInvalidCredentials             = errors.New("invalid credentials")
-	ErrNotFound                       = errors.New("not found")
-	ErrForbidden                      = errors.New("forbidden")
-	ErrMissingAuthHeader              = errors.New("missing authorization header")
-	ErrInvalidAuthHeader              = errors.New("invalid authorization header format")
-	ErrInvalidToken                   = errors.New("invalid or expired token")
-	ErrUnexpectedSigningMethod        = errors.New("unexpected signing method")
-	ErrEmailAlreadyExists             = errors.New("email already exists")
-	ErrUserNotFound                   = errors.New("user not found")
-	ErrPositionNotFound               = errors.New("position not found")
-	ErrPositionAlreadyExists          = errors.New("position with name already exists")
-	ErrPositionInUse                  = errors.New("position is assigned to one or more users")
-	ErrSkillNotFound                  = errors.New("skill not found")
-	ErrSkillAlreadyExists             = errors.New("skill with name already exists")
-	ErrSkillInUse                     = errors.New("skill is assigned to one or more users")
-	ErrTeamAlreadyExists              = errors.New("team with name already exists")
-	ErrTeamLeaderAlreadyInAnotherTeam = errors.New("team leader is already leading another team")
-	ErrTeamNotFound                   = errors.New("team not found")
-	ErrUserAlreadyInTeam              = errors.New("user is already a member of the team")
-	ErrUserNotInTeam                  = errors.New("user is not a member of the team")
-	ErrCannotRemoveOrMoveTeamLeader   = errors.New("cannot remove or move the team leader from the team")
+	ErrInternalServerError             = NewAppError(http.StatusInternalServerError, "internal server error")
+	ErrInvalidCredentials              = NewAppError(http.StatusUnauthorized, "invalid credentials")
+	ErrNotFound                        = NewAppError(http.StatusNotFound, "not found")
+	ErrForbidden                       = NewAppError(http.StatusForbidden, "forbidden")
+	ErrMissingAuthHeader               = NewAppError(http.StatusUnauthorized, "missing authorization header")
+	ErrInvalidAuthHeader               = NewAppError(http.StatusUnauthorized, "invalid authorization header format")
+	ErrInvalidToken                    = NewAppError(http.StatusUnauthorized, "invalid or expired token")
+	ErrUnexpectedSigningMethod         = NewAppError(http.StatusUnauthorized, "unexpected signing method")
+	ErrEmailAlreadyExists              = NewAppError(http.StatusConflict, "email already exists")
+	ErrUserNotFound                    = NewAppError(http.StatusNotFound, "user not found")
+	ErrPositionNotFound                = NewAppError(http.StatusNotFound, "position not found")
+	ErrPositionAlreadyExists           = NewAppError(http.StatusConflict, "position with name already exists")
+	ErrPositionInUse                   = NewAppError(http.StatusBadRequest, "position is assigned to one or more users")
+	ErrSkillNotFound                   = NewAppError(http.StatusNotFound, "skill not found")
+	ErrSkillAlreadyExists              = NewAppError(http.StatusConflict, "skill with name already exists")
+	ErrSkillInUse                      = NewAppError(http.StatusBadRequest, "skill is assigned to one or more users")
+	ErrTeamAlreadyExists               = NewAppError(http.StatusConflict, "team with name already exists")
+	ErrTeamLeaderAlreadyInAnotherTeam  = NewAppError(http.StatusBadRequest, "team leader is already leading another team")
+	ErrTeamNotFound                    = NewAppError(http.StatusNotFound, "team not found")
+	ErrUserAlreadyInTeam               = NewAppError(http.StatusBadRequest, "user is already a member of the team")
+	ErrUserNotInTeam                   = NewAppError(http.StatusBadRequest, "user is not a member of the team")
+	ErrCannotRemoveOrMoveTeamLeader    = NewAppError(http.StatusBadRequest, "cannot remove or move the team leader from the team")
+	ErrCannotDeleteUserBeingTeamLeader = NewAppError(http.StatusBadRequest, "user cannot be deleted because they are a team leader")
 )
 
 // Error response
@@ -59,34 +73,13 @@ func RespondError(
 	})
 }
 
-func RespondCustomError(
-	c *gin.Context,
-	err error,
-	defaultMessage string,
-) {
-	message := "internal server error"
-	if defaultMessage != "" {
-		message = defaultMessage
+func RespondCustomError(c *gin.Context, err error, defaultMessage string) {
+	if appErr, ok := err.(*AppError); ok {
+		RespondError(c, appErr.Status, appErr.Message)
+		return
 	}
-	status := http.StatusInternalServerError
-	switch err {
-	case ErrNotFound, ErrUserNotFound, ErrSkillNotFound, ErrPositionNotFound:
-		message = err.Error()
-		status = http.StatusNotFound
-	case ErrPositionInUse, ErrSkillInUse:
-		message = err.Error()
-		status = http.StatusBadRequest
-	case ErrForbidden:
-		message = err.Error()
-		status = http.StatusForbidden
-	case ErrInvalidAuthHeader, ErrInvalidCredentials, ErrInvalidToken, ErrMissingAuthHeader, ErrUnexpectedSigningMethod:
-		message = err.Error()
-		status = http.StatusUnauthorized
-	case ErrEmailAlreadyExists, ErrPositionAlreadyExists, ErrSkillAlreadyExists:
-		message = err.Error()
-		status = http.StatusConflict
-	}
-	RespondError(c, status, message)
+
+	RespondError(c, http.StatusInternalServerError, defaultMessage)
 }
 
 func RespondPageError(
