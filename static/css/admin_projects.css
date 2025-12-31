@@ -1,0 +1,36 @@
+/* Project Management Styles */
+.member-select-container {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+}
+
+.search-results {
+  position: absolute;
+  z-index: 1000;
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  display: none;
+}
+
+.hover-bg-light:hover {
+  background-color: #f8f9fa;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+#memberCheckboxList .form-check {
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+}
+
+#memberCheckboxList .form-check-input {
+  margin-top: 0;
+  cursor: pointer;
+}

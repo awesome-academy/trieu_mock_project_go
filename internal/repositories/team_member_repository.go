@@ -27,6 +27,18 @@ func (r *TeamMemberRepository) FindActiveMembersByTeamID(db *gorm.DB, teamID uin
 	return members, nil
 }
 
+func (r *TeamMemberRepository) FindAllActiveMembersByTeamID(db *gorm.DB, teamID uint) ([]models.TeamMember, error) {
+	var members []models.TeamMember
+	result := db.
+		Preload("User").
+		Where("team_id = ? AND left_at IS NULL", teamID).
+		Find(&members)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return members, nil
+}
+
 func (r *TeamMemberRepository) CountActiveMembersByTeamID(db *gorm.DB, teamID uint) (int64, error) {
 	var count int64
 	result := db.Model(&models.TeamMember{}).

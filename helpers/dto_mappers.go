@@ -283,3 +283,59 @@ func MapSkillsToSkillSummaries(skills []models.Skill) []dtos.SkillSummary {
 	}
 	return skillSummaries
 }
+
+func MapProjectToProjectListItem(project *models.Project) *dtos.ProjectListItem {
+	if project == nil {
+		return nil
+	}
+	var startDate, endDate *types.Date
+	if project.StartDate != nil {
+		startDate = &types.Date{Time: *project.StartDate}
+	}
+	if project.EndDate != nil {
+		endDate = &types.Date{Time: *project.EndDate}
+	}
+	return &dtos.ProjectListItem{
+		ID:           project.ID,
+		Name:         project.Name,
+		Abbreviation: project.Abbreviation,
+		StartDate:    startDate,
+		EndDate:      endDate,
+		LeaderName:   project.Leader.Name,
+		TeamName:     project.Team.Name,
+	}
+}
+
+func MapProjectsToProjectListItems(projects []models.Project) []dtos.ProjectListItem {
+	items := make([]dtos.ProjectListItem, 0, len(projects))
+	for _, project := range projects {
+		item := MapProjectToProjectListItem(&project)
+		if item != nil {
+			items = append(items, *item)
+		}
+	}
+	return items
+}
+
+func MapProjectToProjectDetail(project *models.Project) *dtos.ProjectDetail {
+	if project == nil {
+		return nil
+	}
+	var startDate, endDate *types.Date
+	if project.StartDate != nil {
+		startDate = &types.Date{Time: *project.StartDate}
+	}
+	if project.EndDate != nil {
+		endDate = &types.Date{Time: *project.EndDate}
+	}
+	return &dtos.ProjectDetail{
+		ID:           project.ID,
+		Name:         project.Name,
+		Abbreviation: project.Abbreviation,
+		StartDate:    startDate,
+		EndDate:      endDate,
+		Leader:       *MapUserToUserSummary(&project.Leader),
+		Team:         *MapTeamToTeamSummary(&project.Team),
+		Members:      MapUsersToUserSummaries(project.Members),
+	}
+}

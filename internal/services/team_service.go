@@ -80,6 +80,15 @@ func (s *TeamsService) GetTeamMembers(c context.Context, teamID uint, limit, off
 	return response, nil
 }
 
+func (s *TeamsService) GetAllTeamMembers(c context.Context, teamID uint) ([]dtos.TeamMemberSummary, error) {
+	members, err := s.teamMemberRepository.FindAllActiveMembersByTeamID(s.db.WithContext(c), teamID)
+	if err != nil {
+		return nil, appErrors.ErrInternalServerError
+	}
+
+	return helpers.MapTeamMembersToTeamMemberSummaries(members), nil
+}
+
 func (s *TeamsService) GetTeamMemberHistory(c context.Context, teamID uint, limit, offset int) (*dtos.ListTeamMemberHistoryResponse, error) {
 	members, err := s.teamMemberRepository.FindTeamMembersByTeamID(s.db.WithContext(c), teamID, limit, offset)
 	if err != nil {

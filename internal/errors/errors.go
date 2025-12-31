@@ -47,6 +47,8 @@ var (
 	ErrUserNotInTeam                   = NewAppError(http.StatusBadRequest, "user is not a member of the team")
 	ErrCannotRemoveOrMoveTeamLeader    = NewAppError(http.StatusBadRequest, "cannot remove or move the team leader from the team")
 	ErrCannotDeleteUserBeingTeamLeader = NewAppError(http.StatusBadRequest, "user cannot be deleted because they are a team leader")
+	ErrProjectNotFound                 = NewAppError(http.StatusNotFound, "project not found")
+	ErrProjectAlreadyExists            = NewAppError(http.StatusConflict, "project with name already exists")
 )
 
 // Error response
@@ -122,6 +124,14 @@ func HandleBindError(c *gin.Context, err error) bool {
 			fields[field] = "must be at least " + fieldErr.Param() + " characters"
 		case "max":
 			fields[field] = "must be at most " + fieldErr.Param() + " characters"
+		case "ltfield":
+			fields[field] = "must be less than " + fieldErr.Param()
+		case "gtfield":
+			fields[field] = "must be greater than " + fieldErr.Param()
+		case "required_with_end_date":
+			fields[field] = "is required when End Date is provided"
+		case "gt_start_date":
+			fields[field] = "must be greater than Start Date"
 		default:
 			fields[field] = "is invalid"
 		}
