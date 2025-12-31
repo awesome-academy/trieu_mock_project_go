@@ -58,12 +58,12 @@ func (s *TeamsService) GetTeamDetails(c context.Context, id uint) (*dtos.Team, e
 }
 
 func (s *TeamsService) GetTeamMembers(c context.Context, teamID uint, limit, offset int) (*dtos.ListTeamMembersResponse, error) {
-	members, err := s.teamMemberRepository.FindMembersByTeamID(s.db.WithContext(c), teamID, limit, offset)
+	members, err := s.teamMemberRepository.FindActiveMembersByTeamID(s.db.WithContext(c), teamID, limit, offset)
 	if err != nil {
 		return nil, appErrors.ErrInternalServerError
 	}
 
-	totalCount, err := s.teamMemberRepository.CountMembersByTeamID(s.db.WithContext(c), teamID)
+	totalCount, err := s.teamMemberRepository.CountActiveMembersByTeamID(s.db.WithContext(c), teamID)
 	if err != nil {
 		return nil, appErrors.ErrInternalServerError
 	}

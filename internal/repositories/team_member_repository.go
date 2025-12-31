@@ -13,11 +13,11 @@ func NewTeamMemberRepository() *TeamMemberRepository {
 	return &TeamMemberRepository{}
 }
 
-func (r *TeamMemberRepository) FindMembersByTeamID(db *gorm.DB, teamID uint, limit, offset int) ([]models.TeamMember, error) {
+func (r *TeamMemberRepository) FindActiveMembersByTeamID(db *gorm.DB, teamID uint, limit, offset int) ([]models.TeamMember, error) {
 	var members []models.TeamMember
 	result := db.
 		Preload("User").
-		Where("team_id = ?", teamID).
+		Where("team_id = ? AND left_at IS NULL", teamID).
 		Limit(limit).
 		Offset(offset).
 		Find(&members)
@@ -27,10 +27,10 @@ func (r *TeamMemberRepository) FindMembersByTeamID(db *gorm.DB, teamID uint, lim
 	return members, nil
 }
 
-func (r *TeamMemberRepository) CountMembersByTeamID(db *gorm.DB, teamID uint) (int64, error) {
+func (r *TeamMemberRepository) CountActiveMembersByTeamID(db *gorm.DB, teamID uint) (int64, error) {
 	var count int64
 	result := db.Model(&models.TeamMember{}).
-		Where("team_id = ?", teamID).
+		Where("team_id = ? AND left_at IS NULL", teamID).
 		Count(&count)
 	if result.Error != nil {
 		return 0, result.Error
