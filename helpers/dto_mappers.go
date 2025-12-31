@@ -189,7 +189,10 @@ func MapTeamMemberToTeamMemberHistory(member *models.TeamMember) *dtos.TeamMembe
 func MapTeamMembersToTeamMemberHistories(members []models.TeamMember) []dtos.TeamMemberHistory {
 	histories := make([]dtos.TeamMemberHistory, 0, len(members))
 	for _, member := range members {
-		histories = append(histories, *MapTeamMemberToTeamMemberHistory(&member))
+		teamMemberHistory := MapTeamMemberToTeamMemberHistory(&member)
+		if teamMemberHistory != nil {
+			histories = append(histories, *teamMemberHistory)
+		}
 	}
 	return histories
 }

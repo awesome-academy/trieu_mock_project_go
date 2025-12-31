@@ -83,12 +83,12 @@ func (s *TeamsService) GetTeamMembers(c context.Context, teamID uint, limit, off
 func (s *TeamsService) GetTeamMemberHistory(c context.Context, teamID uint, limit, offset int) (*dtos.ListTeamMemberHistoryResponse, error) {
 	members, err := s.teamMemberRepository.FindTeamMembersByTeamID(s.db.WithContext(c), teamID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, appErrors.ErrInternalServerError
 	}
 
 	totalCount, err := s.teamMemberRepository.CountTeamMembersByTeamID(s.db.WithContext(c), teamID)
 	if err != nil {
-		return nil, err
+		return nil, appErrors.ErrInternalServerError
 	}
 
 	return &dtos.ListTeamMemberHistoryResponse{
@@ -113,7 +113,10 @@ func (s *TeamsService) GetAllTeamsSummary(c context.Context) []dtos.TeamSummary 
 func (s *TeamsService) CreateTeam(c context.Context, req dtos.CreateOrUpdateTeamRequest) error {
 	leader, err := s.userRepository.FindByID(s.db.WithContext(c), req.LeaderID)
 	if err != nil {
-		return err
+		if err == gorm.ErrRecordNotFound {
+			return appErrors.ErrUserNotFound
+		}
+		return appErrors.ErrInternalServerError
 	}
 
 	team := &models.Team{
@@ -126,11 +129,11 @@ func (s *TeamsService) CreateTeam(c context.Context, req dtos.CreateOrUpdateTeam
 			if appErrors.IsDuplicatedEntryError(err) {
 				return appErrors.ErrTeamAlreadyExists
 			}
-			return err
+			return appErrors.ErrInternalServerError
 		}
 		leader.CurrentTeamID = &team.ID
 		if err := s.userRepository.UpdateUser(tx, leader); err != nil {
-			return err
+			return appErrors.ErrInternalServerError
 		}
 		newMember := &models.TeamMember{
 			UserID:   req.LeaderID,
@@ -142,7 +145,7 @@ func (s *TeamsService) CreateTeam(c context.Context, req dtos.CreateOrUpdateTeam
 			if appErrors.IsDuplicatedEntryError(err) {
 				return appErrors.ErrTeamLeaderAlreadyInAnotherTeam
 			}
-			return err
+			return appErrors.ErrInternalServerError
 		}
 		return nil
 	})
@@ -151,7 +154,10 @@ func (s *TeamsService) CreateTeam(c context.Context, req dtos.CreateOrUpdateTeam
 func (s *TeamsService) UpdateTeam(c context.Context, id uint, req dtos.CreateOrUpdateTeamRequest) error {
 	team, err := s.teamRepository.FindByID(s.db.WithContext(c), id)
 	if err != nil {
-		return err
+		if err == gorm.ErrRecordNotFound {
+			return appErrors.ErrTeamNotFound
+		}
+		return appErrors.ErrInternalServerError
 	}
 
 	team.Name = req.Name
@@ -164,7 +170,7 @@ func (s *TeamsService) UpdateTeam(c context.Context, id uint, req dtos.CreateOrU
 				if appErrors.IsDuplicatedEntryError(err) {
 					return appErrors.ErrTeamAlreadyExists
 				}
-				return err
+				return appErrors.ErrInternalServerError
 			}
 
 			// Update leader's current_team_id
@@ -173,16 +179,16 @@ func (s *TeamsService) UpdateTeam(c context.Context, id uint, req dtos.CreateOrU
 				if err == gorm.ErrRecordNotFound {
 					return appErrors.ErrUserNotFound
 				}
-				return err
+				return appErrors.ErrInternalServerError
 			}
 			newLeader.CurrentTeamID = &team.ID
 			if err := s.userRepository.UpdateUser(tx, newLeader); err != nil {
-				return err
+				return appErrors.ErrInternalServerError
 			}
 
 			activeTeamMember, err := s.teamMemberRepository.FindActiveMemberByUserID(s.db.WithContext(c), req.LeaderID)
 			if err != nil && err != gorm.ErrRecordNotFound {
-				return err
+				return appErrors.ErrInternalServerError
 			}
 			if activeTeamMember != nil {
 				if activeTeamMember.TeamID == team.ID {
@@ -200,33 +206,40 @@ func (s *TeamsService) UpdateTeam(c context.Context, id uint, req dtos.CreateOrU
 				JoinedAt: time.Now(),
 			}
 			if err := s.teamMemberRepository.Create(tx, newMember); err != nil {
-				return err
+				return appErrors.ErrInternalServerError
 			}
 
 			return nil
 		})
 	} else {
-		err = s.teamRepository.Update(s.db.WithContext(c), team)
-		if appErrors.IsDuplicatedEntryError(err) {
-			return appErrors.ErrTeamAlreadyExists
+		if err = s.teamRepository.Update(s.db.WithContext(c), team); err != nil {
+			if appErrors.IsDuplicatedEntryError(err) {
+				return appErrors.ErrTeamAlreadyExists
+			}
 		}
-		return err
+		return nil
 	}
 }
 
 func (s *TeamsService) DeleteTeam(c context.Context, id uint) error {
-	_, err := s.teamRepository.FindByID(s.db.WithContext(c), id)
-	if err != nil {
-		return err
+	if _, err := s.teamRepository.FindByID(s.db.WithContext(c), id); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return appErrors.ErrTeamNotFound
+		}
+		return appErrors.ErrInternalServerError
 	}
-	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
 		// Set current_team_id = null for all users in this team
-		if err = s.userRepository.UpdateUsersCurrentTeamToNullByTeamID(tx, id); err != nil {
+		if err := s.userRepository.UpdateUsersCurrentTeamToNullByTeamID(tx, id); err != nil {
 			return err
 		}
 
 		return s.teamRepository.Delete(tx, id)
 	})
+	if err != nil {
+		return appErrors.ErrInternalServerError
+	}
+	return nil
 }
 
 func (s *TeamsService) AddMemberToTeam(c context.Context, teamID uint, userID uint) error {
@@ -234,21 +247,21 @@ func (s *TeamsService) AddMemberToTeam(c context.Context, teamID uint, userID ui
 		if err == gorm.ErrRecordNotFound {
 			return appErrors.ErrTeamNotFound
 		}
-		return err
+		return appErrors.ErrInternalServerError
 	}
 	user, err := s.userRepository.FindByID(s.db.WithContext(c), userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return appErrors.ErrUserNotFound
 		}
-		return err
+		return appErrors.ErrInternalServerError
 	}
 	if (user.CurrentTeamID != nil) && (*user.CurrentTeamID == teamID) {
 		return appErrors.ErrUserAlreadyInTeam
 	}
 	activeTeamMember, err := s.teamMemberRepository.FindActiveMemberByUserID(s.db.WithContext(c), userID)
 	if err != nil && err != gorm.ErrRecordNotFound {
-		return err
+		return appErrors.ErrInternalServerError
 	}
 	now := time.Now()
 	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
@@ -256,14 +269,14 @@ func (s *TeamsService) AddMemberToTeam(c context.Context, teamID uint, userID ui
 		if activeTeamMember != nil {
 			activeTeam, err := s.teamRepository.FindByID(tx, activeTeamMember.TeamID)
 			if err != nil {
-				return err
+				return appErrors.ErrInternalServerError
 			}
 			if activeTeam.LeaderID == userID {
 				return appErrors.ErrCannotRemoveOrMoveTeamLeader
 			}
 			activeTeamMember.LeftAt = &now
 			if err := s.teamMemberRepository.Update(tx, activeTeamMember); err != nil {
-				return err
+				return appErrors.ErrInternalServerError
 			}
 		}
 		// Add new team member record
@@ -273,12 +286,15 @@ func (s *TeamsService) AddMemberToTeam(c context.Context, teamID uint, userID ui
 			JoinedAt: now,
 		}
 		if err := s.teamMemberRepository.Create(tx, newMember); err != nil {
-			return err
+			return appErrors.ErrInternalServerError
 		}
 
 		// Update user's current_team_id
 		user.CurrentTeamID = &teamID
-		return s.userRepository.UpdateUser(tx, user)
+		if err := s.userRepository.UpdateUser(tx, user); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+		return nil
 	})
 }
 
@@ -288,7 +304,7 @@ func (s *TeamsService) RemoveMemberFromTeam(c context.Context, teamID uint, user
 		if err == gorm.ErrRecordNotFound {
 			return appErrors.ErrTeamNotFound
 		}
-		return err
+		return appErrors.ErrInternalServerError
 	}
 	if team.LeaderID == userID {
 		return appErrors.ErrCannotRemoveOrMoveTeamLeader
@@ -298,14 +314,14 @@ func (s *TeamsService) RemoveMemberFromTeam(c context.Context, teamID uint, user
 		if err == gorm.ErrRecordNotFound {
 			return appErrors.ErrUserNotFound
 		}
-		return err
+		return appErrors.ErrInternalServerError
 	}
 	if (user.CurrentTeamID == nil) || (*user.CurrentTeamID != teamID) {
 		return appErrors.ErrUserNotInTeam
 	}
 	teamMember, err := s.teamMemberRepository.FindActiveMemberByUserID(s.db.WithContext(c), userID)
 	if err != nil {
-		return err
+		return appErrors.ErrInternalServerError
 	}
 	if teamMember == nil || teamMember.TeamID != teamID {
 		return appErrors.ErrUserNotInTeam
@@ -315,11 +331,14 @@ func (s *TeamsService) RemoveMemberFromTeam(c context.Context, teamID uint, user
 		// Set left_at for team member record
 		teamMember.LeftAt = &now
 		if err := s.teamMemberRepository.Update(tx, teamMember); err != nil {
-			return err
+			return appErrors.ErrInternalServerError
 		}
 
 		// Set user's current_team_id to null
 		user.CurrentTeamID = nil
-		return s.userRepository.UpdateUser(tx, user)
+		if err := s.userRepository.UpdateUser(tx, user); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+		return nil
 	})
 }

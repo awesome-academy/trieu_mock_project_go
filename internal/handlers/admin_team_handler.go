@@ -9,7 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	csrf "github.com/utrack/gin-csrf"
-	"gorm.io/gorm"
 )
 
 type AdminTeamHandler struct {
@@ -29,23 +28,20 @@ func (h *AdminTeamHandler) ListTeamPage(c *gin.Context) {
 }
 
 func (h *AdminTeamHandler) TeamSearchPartial(c *gin.Context) {
+	templateName := "partials/admin_teams_search.html"
 	var requestQuery dtos.PaginationRequestQuery
 	if err := c.ShouldBindQuery(&requestQuery); err != nil {
-		c.HTML(http.StatusBadRequest, "partials/admin_teams_search.html", gin.H{
-			"error": "Invalid query parameters",
-		})
+		appErrors.RespondPageError(c, http.StatusBadRequest, templateName, "Invalid query parameters")
 		return
 	}
 
 	resp, err := h.teamService.ListTeams(c.Request.Context(), requestQuery.Limit, requestQuery.Offset)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "partials/admin_teams_search.html", gin.H{
-			"error": "Failed to load teams",
-		})
+		appErrors.RespondPageError(c, http.StatusInternalServerError, templateName, "Failed to load teams")
 		return
 	}
 
-	c.HTML(http.StatusOK, "partials/admin_teams_search.html", gin.H{
+	c.HTML(http.StatusOK, templateName, gin.H{
 		"teams": resp.Teams,
 		"page":  resp.Page,
 	})
@@ -65,19 +61,7 @@ func (h *AdminTeamHandler) CreateTeam(c *gin.Context) {
 	}
 
 	if err := h.teamService.CreateTeam(c.Request.Context(), request); err != nil {
-		if err == gorm.ErrRecordNotFound {
-			appErrors.RespondError(c, http.StatusBadRequest, "Leader user not found")
-			return
-		}
-		if err == appErrors.ErrTeamLeaderAlreadyInAnotherTeam {
-			appErrors.RespondError(c, http.StatusConflict, err.Error())
-			return
-		}
-		if err == appErrors.ErrTeamAlreadyExists {
-			appErrors.RespondError(c, http.StatusConflict, err.Error())
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to create team")
+		appErrors.RespondCustomError(c, err, "Failed to create team")
 		return
 	}
 
@@ -85,35 +69,27 @@ func (h *AdminTeamHandler) CreateTeam(c *gin.Context) {
 }
 
 func (h *AdminTeamHandler) EditTeamPage(c *gin.Context) {
+	templateName := "pages/admin_team_edit.html"
 	teamIdParam := c.Param("teamId")
 	teamId, err := strconv.Atoi(teamIdParam)
 	if err != nil {
-		c.HTML(http.StatusBadRequest, "pages/admin_team_edit.html", gin.H{
-			"title": "Edit Team",
-			"error": "Invalid team ID",
-		})
+		appErrors.RespondPageError(c, http.StatusBadRequest, templateName, "Invalid team ID")
 		return
 	}
 
 	team, err := h.teamService.GetTeamDetails(c.Request.Context(), uint(teamId))
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "pages/admin_team_edit.html", gin.H{
-			"title": "Edit Team",
-			"error": "Team not found",
-		})
+		appErrors.RespondPageError(c, http.StatusInternalServerError, templateName, "Team not found")
 		return
 	}
 
 	historyResp, err := h.teamService.GetTeamMemberHistory(c.Request.Context(), uint(teamId), 10, 0)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "pages/admin_team_edit.html", gin.H{
-			"title": "Edit Team",
-			"error": "Failed to load team member history",
-		})
+		appErrors.RespondPageError(c, http.StatusInternalServerError, templateName, "Failed to load team member history")
 		return
 	}
 
-	c.HTML(http.StatusOK, "pages/admin_team_edit.html", gin.H{
+	c.HTML(http.StatusOK, templateName, gin.H{
 		"title":     "Edit Team",
 		"team":      team,
 		"history":   historyResp.History,
@@ -123,20 +99,17 @@ func (h *AdminTeamHandler) EditTeamPage(c *gin.Context) {
 }
 
 func (h *AdminTeamHandler) TeamMemberHistoryPartial(c *gin.Context) {
+	templateName := "partials/admin_team_member_history.html"
 	teamIdParam := c.Param("teamId")
 	teamId, err := strconv.Atoi(teamIdParam)
 	if err != nil {
-		c.HTML(http.StatusBadRequest, "partials/admin_team_member_history.html", gin.H{
-			"error": "Invalid team ID",
-		})
+		appErrors.RespondPageError(c, http.StatusBadRequest, templateName, "Invalid team ID")
 		return
 	}
 
 	var requestQuery dtos.PaginationRequestQuery
 	if err := c.ShouldBindQuery(&requestQuery); err != nil {
-		c.HTML(http.StatusBadRequest, "partials/admin_team_member_history.html", gin.H{
-			"error": "Invalid query parameters",
-		})
+		appErrors.RespondPageError(c, http.StatusBadRequest, templateName, "Invalid query parameters")
 		return
 	}
 
@@ -146,13 +119,11 @@ func (h *AdminTeamHandler) TeamMemberHistoryPartial(c *gin.Context) {
 
 	resp, err := h.teamService.GetTeamMemberHistory(c.Request.Context(), uint(teamId), requestQuery.Limit, requestQuery.Offset)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "partials/admin_team_member_history.html", gin.H{
-			"error": "Failed to load history",
-		})
+		appErrors.RespondPageError(c, http.StatusInternalServerError, templateName, "Failed to load team member history")
 		return
 	}
 
-	c.HTML(http.StatusOK, "partials/admin_team_member_history.html", gin.H{
+	c.HTML(http.StatusOK, templateName, gin.H{
 		"history": resp.History,
 		"page":    resp.Page,
 	})
@@ -172,11 +143,7 @@ func (h *AdminTeamHandler) UpdateTeam(c *gin.Context) {
 	}
 
 	if err := h.teamService.UpdateTeam(c.Request.Context(), uint(teamId), request); err != nil {
-		if err == appErrors.ErrTeamAlreadyExists {
-			appErrors.RespondError(c, http.StatusConflict, err.Error())
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to update team")
+		appErrors.RespondCustomError(c, err, "Failed to update team")
 		return
 	}
 
@@ -192,11 +159,7 @@ func (h *AdminTeamHandler) DeleteTeam(c *gin.Context) {
 	}
 
 	if err := h.teamService.DeleteTeam(c.Request.Context(), uint(teamId)); err != nil {
-		if err == appErrors.ErrNotFound {
-			appErrors.RespondError(c, http.StatusNotFound, "Team not found")
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to delete team")
+		appErrors.RespondCustomError(c, err, "Failed to delete team")
 		return
 	}
 
@@ -217,14 +180,7 @@ func (h *AdminTeamHandler) AddMember(c *gin.Context) {
 	}
 
 	if err := h.teamService.AddMemberToTeam(c.Request.Context(), uint(teamId), request.UserID); err != nil {
-		if err == appErrors.ErrTeamNotFound ||
-			err == appErrors.ErrUserNotFound ||
-			err == appErrors.ErrUserAlreadyInTeam ||
-			err == appErrors.ErrCannotRemoveOrMoveTeamLeader {
-			appErrors.RespondError(c, http.StatusBadRequest, err.Error())
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to add member")
+		appErrors.RespondCustomError(c, err, "Failed to add member")
 		return
 	}
 
@@ -247,14 +203,7 @@ func (h *AdminTeamHandler) RemoveMember(c *gin.Context) {
 	}
 
 	if err := h.teamService.RemoveMemberFromTeam(c.Request.Context(), uint(teamId), uint(userId)); err != nil {
-		if err == appErrors.ErrTeamNotFound ||
-			err == appErrors.ErrUserNotFound ||
-			err == appErrors.ErrUserNotInTeam ||
-			err == appErrors.ErrCannotRemoveOrMoveTeamLeader {
-			appErrors.RespondError(c, http.StatusBadRequest, err.Error())
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to remove member")
+		appErrors.RespondCustomError(c, err, "Failed to remove member")
 		return
 	}
 
