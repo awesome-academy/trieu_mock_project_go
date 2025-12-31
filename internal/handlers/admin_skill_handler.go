@@ -60,11 +60,7 @@ func (h *AdminSkillHandler) CreateSkill(c *gin.Context) {
 	}
 
 	if err := h.skillService.CreateSkill(c.Request.Context(), request); err != nil {
-		if err == appErrors.ErrSkillAlreadyExists {
-			appErrors.RespondError(c, http.StatusConflict, err.Error())
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to create skill")
+		appErrors.RespondCustomError(c, err, "Failed to create skill")
 		return
 	}
 
@@ -107,15 +103,7 @@ func (h *AdminSkillHandler) UpdateSkill(c *gin.Context) {
 	}
 
 	if err := h.skillService.UpdateSkill(c.Request.Context(), uint(skillId), request); err != nil {
-		if err == appErrors.ErrNotFound {
-			appErrors.RespondError(c, http.StatusNotFound, "Skill not found")
-			return
-		}
-		if err == appErrors.ErrSkillAlreadyExists {
-			appErrors.RespondError(c, http.StatusConflict, err.Error())
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to update skill")
+		appErrors.RespondCustomError(c, err, "Failed to update skill")
 		return
 	}
 
@@ -131,15 +119,7 @@ func (h *AdminSkillHandler) DeleteSkill(c *gin.Context) {
 	}
 
 	if err := h.skillService.DeleteSkill(c.Request.Context(), uint(skillId)); err != nil {
-		if err == appErrors.ErrNotFound {
-			appErrors.RespondError(c, http.StatusNotFound, "Skill not found")
-			return
-		}
-		if err == appErrors.ErrSkillInUse {
-			appErrors.RespondError(c, http.StatusConflict, err.Error())
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to delete skill")
+		appErrors.RespondCustomError(c, err, "Failed to delete skill")
 		return
 	}
 

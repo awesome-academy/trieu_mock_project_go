@@ -60,11 +60,7 @@ func (h *AdminPositionHandler) CreatePosition(c *gin.Context) {
 	}
 
 	if err := h.positionsService.CreatePosition(c.Request.Context(), request); err != nil {
-		if err == appErrors.ErrPositionAlreadyExists {
-			appErrors.RespondError(c, http.StatusConflict, err.Error())
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to create position")
+		appErrors.RespondCustomError(c, err, "Failed to create position")
 		return
 	}
 
@@ -97,7 +93,7 @@ func (h *AdminPositionHandler) UpdatePosition(c *gin.Context) {
 	positionIdParam := c.Param("positionId")
 	positionId, err := strconv.Atoi(positionIdParam)
 	if err != nil {
-		appErrors.RespondError(c, http.StatusBadRequest, "Invalid position ID")
+		appErrors.RespondCustomError(c, err, "Invalid position ID")
 		return
 	}
 
@@ -107,15 +103,7 @@ func (h *AdminPositionHandler) UpdatePosition(c *gin.Context) {
 	}
 
 	if err := h.positionsService.UpdatePosition(c.Request.Context(), uint(positionId), request); err != nil {
-		if err == appErrors.ErrNotFound {
-			appErrors.RespondError(c, http.StatusNotFound, "Position not found")
-			return
-		}
-		if err == appErrors.ErrPositionAlreadyExists {
-			appErrors.RespondError(c, http.StatusConflict, err.Error())
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to update position")
+		appErrors.RespondCustomError(c, err, "Failed to update position")
 		return
 	}
 
@@ -131,11 +119,7 @@ func (h *AdminPositionHandler) DeletePosition(c *gin.Context) {
 	}
 
 	if err := h.positionsService.DeletePosition(c.Request.Context(), uint(positionId)); err != nil {
-		if err == appErrors.ErrNotFound {
-			appErrors.RespondError(c, http.StatusNotFound, "Position not found")
-			return
-		}
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to delete position")
+		appErrors.RespondCustomError(c, err, "Failed to delete position")
 		return
 	}
 

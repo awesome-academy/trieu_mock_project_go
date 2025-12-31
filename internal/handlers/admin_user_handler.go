@@ -103,11 +103,7 @@ func (h *AdminUserHandler) CreateUser(c *gin.Context) {
 	}
 
 	if err := h.userService.CreateUser(c.Request.Context(), request); err != nil {
-		if err == appErrors.ErrEmailAlreadyExists {
-			appErrors.RespondError(c, http.StatusBadRequest, err.Error())
-		} else {
-			appErrors.RespondError(c, http.StatusInternalServerError, "Failed to create user")
-		}
+		appErrors.RespondCustomError(c, err, "Failed to create user")
 		return
 	}
 
@@ -158,16 +154,7 @@ func (h *AdminUserHandler) UpdateUser(c *gin.Context) {
 	}
 
 	if err := h.userService.UpdateUser(c.Request.Context(), uint(userId), request); err != nil {
-		if err == appErrors.ErrUserNotFound {
-			appErrors.RespondError(c, http.StatusNotFound, err.Error())
-			return
-		}
-		if err == appErrors.ErrEmailAlreadyExists {
-			appErrors.RespondError(c, http.StatusBadRequest, err.Error())
-			return
-		}
-
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to update user")
+		appErrors.RespondCustomError(c, err, "Failed to update user")
 		return
 	}
 
@@ -183,12 +170,7 @@ func (h *AdminUserHandler) DeleteUser(c *gin.Context) {
 	}
 
 	if err := h.userService.DeleteUser(c.Request.Context(), uint(userId)); err != nil {
-		if err == appErrors.ErrUserNotFound {
-			appErrors.RespondError(c, http.StatusNotFound, err.Error())
-			return
-		}
-
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to delete user")
+		appErrors.RespondCustomError(c, err, "Failed to delete user")
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})

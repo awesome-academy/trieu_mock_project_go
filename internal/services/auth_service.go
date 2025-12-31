@@ -23,11 +23,11 @@ func NewAuthService(db *gorm.DB, repo *repositories.UserRepository) *AuthService
 func (s *AuthService) Login(c context.Context, email, password string) (*models.User, error) {
 	user, err := s.repo.FindByEmail(s.db.WithContext(c), email)
 	if err != nil {
-		return nil, err
+		return nil, appErrors.ErrInternalServerError
 	}
 
 	if user == nil {
-		return nil, appErrors.ErrNotFound
+		return nil, appErrors.ErrUserNotFound
 	}
 
 	if !s.VerifyPassword(password, user.Password) {

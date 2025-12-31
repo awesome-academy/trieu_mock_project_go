@@ -38,7 +38,7 @@ func (h *TeamsHandler) ListTeams(c *gin.Context) {
 
 	teamsResp, err := h.teamsService.ListTeams(c.Request.Context(), query.Limit, query.Offset)
 	if err != nil {
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to list teams")
+		appErrors.RespondCustomError(c, err, "Failed to list teams")
 		return
 	}
 
@@ -56,7 +56,7 @@ func (h *TeamsHandler) GetTeamDetails(c *gin.Context) {
 
 	resp, err := h.teamsService.GetTeamDetails(c.Request.Context(), uint(teamId))
 	if err != nil {
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to get team details")
+		appErrors.RespondCustomError(c, err, "Failed to get team details")
 		return
 	}
 
@@ -79,7 +79,7 @@ func (h *TeamsHandler) GetTeamMembers(c *gin.Context) {
 
 	resp, err := h.teamsService.GetTeamMembers(c.Request.Context(), uint(teamId), query.Limit, query.Offset)
 	if err != nil {
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to get team members")
+		appErrors.RespondCustomError(c, err, "Failed to get team members")
 		return
 	}
 
