@@ -60,7 +60,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   function selectLeader(user) {
-    if (user.current_team && user.current_team.id != teamId) {
+    if (user.current_team && user.current_team.id !== teamId) {
       alert(
         "Leader already belongs to a team. Please remove them from their current team or choose another leader."
       );
@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   async function addMember(user) {
     if (user.current_team) {
-      if (user.current_team.id == teamId) {
+      if (user.current_team.id === teamId) {
         memberSearch.value = "";
         memberSearchResults.style.display = "none";
         return;
@@ -225,10 +225,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const formData = new FormData(editTeamForm);
+    const description = formData.get("description");
     const data = {
       name: formData.get("name"),
-      description: formData.get("description"),
-      leader_id: parseInt(formData.get("leader_id")),
+      description: description === "" ? null : description,
     };
 
     try {

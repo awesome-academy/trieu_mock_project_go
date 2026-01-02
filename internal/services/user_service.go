@@ -163,7 +163,7 @@ func (s *UserService) DeleteUser(c context.Context, id uint) error {
 		return appErrors.ErrInternalServerError
 	}
 
-	exist, err := s.teamRepository.ExistByLeaderId(s.db.WithContext(c), id)
+	exist, err := s.teamRepository.ExistByLeaderID(s.db.WithContext(c), id)
 	if err != nil {
 		return appErrors.ErrInternalServerError
 	}

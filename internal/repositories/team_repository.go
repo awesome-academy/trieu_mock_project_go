@@ -79,15 +79,13 @@ func (r *TeamsRepository) Delete(db *gorm.DB, id uint) error {
 	return db.Delete(&models.Team{}, id).Error
 }
 
-func (r *TeamsRepository) ExistByLeaderId(db *gorm.DB, leaderId uint) (bool, error) {
-	var exists bool
+func (r *TeamsRepository) ExistByLeaderID(db *gorm.DB, leaderID uint) (bool, error) {
+	var count int64
 	result := db.Model(&models.Team{}).
-		Select("1").
-		Where("leader_id = ?", leaderId).
-		Limit(1).
-		Find(&exists)
+		Where("leader_id = ?", leaderID).
+		Count(&count)
 	if result.Error != nil {
 		return false, result.Error
 	}
-	return exists, nil
+	return count > 0, nil
 }

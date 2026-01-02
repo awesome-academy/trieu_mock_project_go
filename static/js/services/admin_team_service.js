@@ -17,8 +17,12 @@ const AdminTeamService = {
       body: JSON.stringify(data),
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to create team");
+      try {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create team");
+      } catch {
+        throw new Error("Failed to create team");
+      }
     }
     return await response.json();
   },
@@ -81,8 +85,12 @@ const AdminTeamService = {
       },
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to remove member");
+      try {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to remove member");
+      } catch {
+        throw new Error("Failed to remove member");
+      }
     }
     return await response.json();
   },
