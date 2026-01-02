@@ -22,6 +22,7 @@ type User struct {
 	Teams         []Team         `gorm:"many2many:team_members;foreignKey:ID;joinForeignKey:UserID;references:ID;joinReferences:TeamID"`
 	Projects      []Project      `gorm:"many2many:project_members;foreignKey:ID;joinForeignKey:UserID;references:ID;joinReferences:ProjectID"`
 	Skills        []Skill        `gorm:"many2many:user_skills;foreignKey:ID;joinForeignKey:UserID;references:ID;joinReferences:SkillID"`
+	UserSkill     []UserSkill    `gorm:"foreignKey:UserID;references:ID"`
 	LeadTeams     []Team         `gorm:"foreignKey:LeaderID;references:ID"`
 	LeadProjects  []Project      `gorm:"foreignKey:LeaderID;references:ID"`
 	ActivityLogs  []ActivityLog  `gorm:"foreignKey:UserID;references:ID"`

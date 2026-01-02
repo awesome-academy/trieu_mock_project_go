@@ -49,3 +49,14 @@ func (r *TeamsRepository) FindByID(db *gorm.DB, id uint) (*models.Team, error) {
 	}
 	return &team, nil
 }
+
+func (r *TeamsRepository) FindAllTeamsSummary(db *gorm.DB) ([]models.Team, error) {
+	var teams []models.Team
+	result := db.
+		Select("id", "name").
+		Find(&teams)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return teams, nil
+}

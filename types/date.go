@@ -11,7 +11,11 @@ func (d *Date) MarshalJSON() ([]byte, error) {
 }
 
 func (d *Date) UnmarshalJSON(b []byte) error {
-	parsedTime, err := time.Parse(`"2006-01-02"`, string(b))
+	s := string(b)
+	if s == `""` || s == "null" {
+		return nil
+	}
+	parsedTime, err := time.Parse(`"2006-01-02"`, s)
 	if err != nil {
 		return err
 	}

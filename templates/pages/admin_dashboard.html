@@ -2,47 +2,118 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="/static/css/style.css" />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
+    {{template "partials/admin_head.html" .}}
+    <style>
+      .dashboard-card {
+        transition: transform 0.2s;
+        border-radius: 15px;
+      }
+      .dashboard-card:hover {
+        transform: translateY(-5px);
+      }
+      .welcome-banner {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 2.5rem;
+        margin-bottom: 2.5rem;
+      }
+      .icon-box {
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    </style>
   </head>
   <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div class="container">
-        <a class="navbar-brand" href="/">Mock Project</a>
-        <div class="collapse navbar-collapse">
-          <ul class="navbar-nav ms-auto">
-            <li class="nav-item">
-              <a class="nav-link" href="/logout">Logout</a>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </nav>
+    {{template "partials/admin_navbar.html" .}}
 
-    <div class="container mt-4">
-      <div class="p-5 mb-4 bg-light rounded-3">
-        <div class="container-fluid py-5">
-          <h1 class="display-5 fw-bold">Admin Dashboard</h1>
-          <p class="col-md-8 fs-4">
-            Welcome to the admin panel! You have full access to manage the
-            system.
-          </p>
-          <hr class="my-4" />
-          <p>Use the navigation bar to access different sections.</p>
-          <a class="btn btn-primary btn-lg" href="/" role="button"
-            >Go to Home</a
-          >
+    <div class="container mt-5">
+      <div class="welcome-banner shadow-sm">
+        <h2 class="fw-bold mb-2">Admin Dashboard</h2>
+        <p class="lead mb-0 opacity-75">
+          Welcome to the admin panel! You have full access to manage the system.
+        </p>
+      </div>
+
+      <div class="row g-4">
+        <!-- User Management Card -->
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 shadow-sm border-0 dashboard-card">
+            <div class="card-body p-4 d-flex flex-column">
+              <div class="mb-4">
+                <div class="icon-box bg-primary bg-opacity-10 rounded-3">
+                  <i class="bi bi-people-fill fs-1 text-primary"></i>
+                </div>
+              </div>
+              <h4 class="card-title fw-bold">User Management</h4>
+              <p class="card-text text-muted flex-grow-1">
+                Manage all users in the system, filter by team, and perform
+                administrative actions.
+              </p>
+              <a
+                href="/admin/users"
+                class="btn btn-primary px-4 py-2 rounded-pill align-self-start"
+              >
+                Manage Users
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Team Management Card (Placeholder) -->
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 shadow-sm border-0 dashboard-card">
+            <div class="card-body p-4 d-flex flex-column">
+              <div class="mb-4">
+                <div class="icon-box bg-success bg-opacity-10 rounded-3">
+                  <i class="bi bi-diagram-3-fill fs-1 text-success"></i>
+                </div>
+              </div>
+              <h4 class="card-title fw-bold">Team Management</h4>
+              <p class="card-text text-muted flex-grow-1">
+                Create, update, and manage organization teams and their
+                structures.
+              </p>
+              <a
+                href="/admin/teams"
+                class="btn btn-success px-4 py-2 rounded-pill align-self-start"
+              >
+                Manage Teams
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Position Management Card -->
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 shadow-sm border-0 dashboard-card">
+            <div class="card-body p-4 d-flex flex-column">
+              <div class="mb-4">
+                <div class="icon-box bg-info bg-opacity-10 rounded-3">
+                  <i class="bi bi-briefcase-fill fs-1 text-info"></i>
+                </div>
+              </div>
+              <h4 class="card-title fw-bold">Position Management</h4>
+              <p class="card-text text-muted flex-grow-1">
+                Manage job positions, titles, and abbreviations within the
+                organization.
+              </p>
+              <a
+                href="/admin/positions"
+                class="btn btn-info px-4 py-2 rounded-pill align-self-start text-white"
+              >
+                Manage Positions
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {{template "partials/admin_scripts.html" .}}
   </body>
 </html>
 {{end}}

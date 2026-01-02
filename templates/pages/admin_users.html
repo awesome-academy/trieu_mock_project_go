@@ -1,0 +1,69 @@
+{{define "pages/admin_users.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {{template "partials/admin_head.html" .}}
+  </head>
+  <body>
+    {{template "partials/admin_navbar.html" .}}
+
+    <div class="container mt-4">
+      <div class="row mb-4 align-items-center">
+        <div class="col">
+          <h1>User Management</h1>
+        </div>
+        <div class="col-auto">
+          <a href="/admin/users/create" class="btn btn-success">
+            <i class="bi bi-person-plus me-1"></i>Create User
+          </a>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-body">
+          <form id="searchForm" class="row g-3">
+            <div class="col-md-4">
+              <label for="teamFilter" class="form-label">Filter by Team</label>
+              <select id="teamFilter" class="form-select">
+                <option value="">All Teams</option>
+                {{range .teams}}
+                <option value="{{.ID}}">{{.Name}}</option>
+                {{end}}
+              </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              <button
+                type="button"
+                id="searchBtn"
+                class="btn btn-primary w-100"
+              >
+                Search
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div id="userListContainer" style="min-height: 400px">
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <template id="loadingTemplate">
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    </template>
+
+    {{template "partials/admin_scripts.html" .}}
+    <script src="/static/js/services/admin_user_service.js"></script>
+    <script src="/static/js/admin_users.js"></script>
+  </body>
+</html>
+{{end}}

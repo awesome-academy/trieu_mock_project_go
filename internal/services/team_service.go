@@ -75,3 +75,12 @@ func (s *TeamsService) GetTeamMembers(c context.Context, teamID uint, limit, off
 
 	return response, nil
 }
+
+func (s *TeamsService) GetAllTeamsSummary(c context.Context) []dtos.TeamSummary {
+	teams, err := s.teamRepository.FindAllTeamsSummary(s.db.WithContext(c))
+	if err != nil {
+		return []dtos.TeamSummary{}
+	}
+
+	return helpers.MapTeamsToTeamSummaries(teams)
+}
