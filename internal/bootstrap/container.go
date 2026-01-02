@@ -47,13 +47,14 @@ func NewAppContainer() *AppContainer {
 	teamMemberRepo := repositories.NewTeamMemberRepository()
 	positionRepo := repositories.NewPositionRepository()
 	projectRepo := repositories.NewProjectRepository()
+	projectMemberRepo := repositories.NewProjectMemberRepository()
 	skillRepo := repositories.NewSkillRepository()
 
 	// Initialize services
 	validationService := services.NewValidationService(config.DB, teamMemberRepo)
 	authService := services.NewAuthService(config.DB, userRepo)
-	userService := services.NewUserService(config.DB, userRepo, teamsRepo, projectRepo)
-	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo, userRepo)
+	userService := services.NewUserService(config.DB, userRepo, teamsRepo, projectRepo, projectMemberRepo, teamMemberRepo)
+	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo, userRepo, projectRepo, projectMemberRepo)
 	positionService := services.NewPositionService(config.DB, positionRepo)
 	projectService := services.NewProjectService(config.DB, projectRepo, validationService)
 	skillService := services.NewSkillService(config.DB, skillRepo)

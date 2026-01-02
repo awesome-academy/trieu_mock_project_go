@@ -46,10 +46,12 @@ var (
 	ErrUserAlreadyInTeam                  = NewAppError(http.StatusBadRequest, "user is already a member of the team")
 	ErrUserNotInTeam                      = NewAppError(http.StatusBadRequest, "user is not a member of the team")
 	ErrCannotRemoveOrMoveTeamLeader       = NewAppError(http.StatusBadRequest, "cannot remove or move the team leader from the team")
+	ErrCannotRemoveOrMoveProjectMember    = NewAppError(http.StatusBadRequest, "cannot remove or move the user because they are a member of a project in this team")
 	ErrCannotDeleteUserBeingTeamLeader    = NewAppError(http.StatusBadRequest, "user cannot be deleted because they are a team leader")
 	ErrProjectNotFound                    = NewAppError(http.StatusNotFound, "project not found")
 	ErrProjectAlreadyExists               = NewAppError(http.StatusConflict, "project with name already exists")
 	ErrCannotDeleteUserBeingProjectLeader = NewAppError(http.StatusBadRequest, "user cannot be deleted because they are a project leader")
+	ErrCannotDeleteUserBeingProjectMember = NewAppError(http.StatusBadRequest, "user cannot be deleted because they are a project member")
 )
 
 // Error response
