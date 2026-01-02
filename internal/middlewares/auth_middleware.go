@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"context"
 	"net/http"
 	"strings"
 	appErrors "trieu_mock_project_go/internal/errors"
@@ -74,6 +75,16 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+
+		// Set user info to context for logging activities
+		ctx := c.Request.Context()
+		if userID := session.Get("user_id"); userID != nil {
+			ctx = context.WithValue(ctx, "user_id", userID)
+		}
+		if email := session.Get("email"); email != nil {
+			ctx = context.WithValue(ctx, "email", email)
+		}
+		c.Request = c.Request.WithContext(ctx)
 
 		c.Next()
 	}

@@ -84,5 +84,9 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 		adminGroup.GET("/projects/:projectId/edit", appContainer.CSRFMiddleware, appContainer.AdminProjectHandler.EditProjectPage)
 		adminGroup.PUT("/projects/:projectId", appContainer.CSRFMiddleware, appContainer.AdminProjectHandler.UpdateProject)
 		adminGroup.DELETE("/projects/:projectId", appContainer.CSRFMiddleware, appContainer.AdminProjectHandler.DeleteProject)
+		// Admin activity logs management
+		adminGroup.GET("/activity-logs", appContainer.CSRFMiddleware, appContainer.AdminActivityLogHandler.AdminActivityLogsPage)
+		adminGroup.GET("/activity-logs/partial/search", appContainer.AdminActivityLogHandler.ActivityLogsSearchPartial)
+		adminGroup.DELETE("/activity-logs/:activityLogId", appContainer.CSRFMiddleware, appContainer.AdminActivityLogHandler.DeleteActivityLog)
 	}
 }

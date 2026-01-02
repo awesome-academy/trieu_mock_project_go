@@ -7,18 +7,20 @@ import (
 	"trieu_mock_project_go/internal/dtos"
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/repositories"
+	"trieu_mock_project_go/internal/types"
 	"trieu_mock_project_go/models"
 
 	"gorm.io/gorm"
 )
 
 type SkillService struct {
-	db              *gorm.DB
-	skillRepository *repositories.SkillRepository
+	db                 *gorm.DB
+	skillRepository    *repositories.SkillRepository
+	activityLogService *ActivityLogService
 }
 
-func NewSkillService(db *gorm.DB, skillRepository *repositories.SkillRepository) *SkillService {
-	return &SkillService{db: db, skillRepository: skillRepository}
+func NewSkillService(db *gorm.DB, skillRepository *repositories.SkillRepository, activityLogService *ActivityLogService) *SkillService {
+	return &SkillService{db: db, skillRepository: skillRepository, activityLogService: activityLogService}
 }
 
 func (s *SkillService) GetAllSkillsSummary(c context.Context) []dtos.SkillSummary {
@@ -63,13 +65,19 @@ func (s *SkillService) CreateSkill(c context.Context, req dtos.CreateOrUpdateSki
 		Name: strings.TrimSpace(req.Name),
 	}
 
-	if err := s.skillRepository.Create(s.db.WithContext(c), skill); err != nil {
-		if appErrors.IsDuplicatedEntryError(err) {
-			return appErrors.ErrSkillAlreadyExists
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		if err := s.skillRepository.Create(tx, skill); err != nil {
+			if appErrors.IsDuplicatedEntryError(err) {
+				return appErrors.ErrSkillAlreadyExists
+			}
+			return appErrors.ErrInternalServerError
 		}
-		return appErrors.ErrInternalServerError
-	}
-	return nil
+
+		if err := s.activityLogService.LogActivityDb(c, tx, types.CreateSkill, skill.ID, skill.Name); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+		return nil
+	})
 }
 
 func (s *SkillService) UpdateSkill(c context.Context, id uint, req dtos.CreateOrUpdateSkillRequest) error {
@@ -83,17 +91,23 @@ func (s *SkillService) UpdateSkill(c context.Context, id uint, req dtos.CreateOr
 
 	currentSkill.Name = strings.TrimSpace(req.Name)
 
-	if err := s.skillRepository.Update(s.db.WithContext(c), currentSkill); err != nil {
-		if appErrors.IsDuplicatedEntryError(err) {
-			return appErrors.ErrSkillAlreadyExists
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		if err := s.skillRepository.Update(tx, currentSkill); err != nil {
+			if appErrors.IsDuplicatedEntryError(err) {
+				return appErrors.ErrSkillAlreadyExists
+			}
+			return appErrors.ErrInternalServerError
 		}
-		return appErrors.ErrInternalServerError
-	}
-	return nil
+
+		if err := s.activityLogService.LogActivityDb(c, tx, types.UpdateSkill, currentSkill.ID, currentSkill.Name); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+		return nil
+	})
 }
 
 func (s *SkillService) DeleteSkill(c context.Context, id uint) error {
-	_, err := s.skillRepository.FindByID(s.db.WithContext(c), id)
+	skill, err := s.skillRepository.FindByID(s.db.WithContext(c), id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return appErrors.ErrSkillNotFound
@@ -109,9 +123,14 @@ func (s *SkillService) DeleteSkill(c context.Context, id uint) error {
 		return appErrors.ErrSkillInUse
 	}
 
-	if err := s.skillRepository.Delete(s.db.WithContext(c), id); err != nil {
-		return appErrors.ErrInternalServerError
-	}
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		if err := s.skillRepository.Delete(tx, id); err != nil {
+			return appErrors.ErrInternalServerError
+		}
 
-	return nil
+		if err := s.activityLogService.LogActivityDb(c, tx, types.DeleteSkill, skill.ID, skill.Name); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+		return nil
+	})
 }

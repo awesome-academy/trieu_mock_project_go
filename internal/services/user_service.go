@@ -7,6 +7,7 @@ import (
 	"trieu_mock_project_go/internal/dtos"
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/repositories"
+	"trieu_mock_project_go/internal/types"
 	"trieu_mock_project_go/models"
 
 	"gorm.io/gorm"
@@ -19,6 +20,7 @@ type UserService struct {
 	projectRepository       *repositories.ProjectRepository
 	projectMemberRepository *repositories.ProjectMemberRepository
 	teamMemberRepository    *repositories.TeamMemberRepository
+	activityLogService      *ActivityLogService
 }
 
 func NewUserService(db *gorm.DB,
@@ -26,7 +28,8 @@ func NewUserService(db *gorm.DB,
 	teamRepository *repositories.TeamsRepository,
 	projectRepository *repositories.ProjectRepository,
 	projectMemberRepository *repositories.ProjectMemberRepository,
-	teamMemberRepository *repositories.TeamMemberRepository) *UserService {
+	teamMemberRepository *repositories.TeamMemberRepository,
+	activityLogService *ActivityLogService) *UserService {
 	return &UserService{
 		db:                      db,
 		userRepository:          userRepository,
@@ -34,6 +37,7 @@ func NewUserService(db *gorm.DB,
 		projectRepository:       projectRepository,
 		projectMemberRepository: projectMemberRepository,
 		teamMemberRepository:    teamMemberRepository,
+		activityLogService:      activityLogService,
 	}
 }
 
@@ -85,6 +89,7 @@ func (s *UserService) CreateUser(c context.Context, req dtos.CreateOrUpdateUserR
 		Email:         req.Email,
 		Birthday:      birthday,
 		PositionID:    req.PositionID,
+		Role:          "user", // Admin role is not allowed to be created here
 		CurrentTeamID: req.TeamID,
 	}
 
@@ -117,6 +122,14 @@ func (s *UserService) CreateUser(c context.Context, req dtos.CreateOrUpdateUserR
 			if err := s.teamMemberRepository.Create(tx, teamMember); err != nil {
 				return err
 			}
+
+			if err := s.activityLogService.LogActivityDb(c, tx, types.JoinTeam, user.ID, user.Email, *user.CurrentTeamID); err != nil {
+				return err
+			}
+		}
+
+		if err := s.activityLogService.LogActivityDb(c, tx, types.CreateUser, user.ID); err != nil {
+			return appErrors.ErrInternalServerError
 		}
 
 		return nil
@@ -159,6 +172,7 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 		Email:         req.Email,
 		Birthday:      birthday,
 		PositionID:    req.PositionID,
+		Role:          currentUser.Role,
 		CurrentTeamID: req.TeamID,
 	}
 
@@ -215,6 +229,10 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 				if err := s.teamMemberRepository.Update(tx, activeMember); err != nil {
 					return appErrors.ErrInternalServerError
 				}
+
+				if err := s.activityLogService.LogActivityDb(c, tx, types.LeaveTeam, user.ID, user.Email, activeMember.TeamID); err != nil {
+					return appErrors.ErrInternalServerError
+				}
 			}
 
 			// Handle joining new team
@@ -227,6 +245,10 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 				if err := s.teamMemberRepository.Create(tx, newMember); err != nil {
 					return appErrors.ErrInternalServerError
 				}
+
+				if err := s.activityLogService.LogActivityDb(c, tx, types.JoinTeam, user.ID, user.Email, *req.TeamID); err != nil {
+					return appErrors.ErrInternalServerError
+				}
 			}
 		}
 
@@ -236,13 +258,17 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 		if err := s.userRepository.UpdateUserSkills(tx, id, userSkills); err != nil {
 			return appErrors.ErrInternalServerError
 		}
+		if err := s.activityLogService.LogActivityDb(c, tx, types.UpdateUser, user.ID); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+
 		return nil
 	})
 	return appErr
 }
 
 func (s *UserService) DeleteUser(c context.Context, id uint) error {
-	_, err := s.userRepository.FindByID(s.db.WithContext(c), id)
+	user, err := s.userRepository.FindByID(s.db.WithContext(c), id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return appErrors.ErrUserNotFound
@@ -274,9 +300,13 @@ func (s *UserService) DeleteUser(c context.Context, id uint) error {
 		return appErrors.ErrCannotDeleteUserBeingProjectMember
 	}
 
-	if err := s.db.WithContext(c).Delete(&models.User{}, id).Error; err != nil {
-		return appErrors.ErrInternalServerError
-	}
-
-	return nil
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		if err := s.userRepository.DeleteUser(tx, id); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+		if err := s.activityLogService.LogActivityDb(c, tx, types.DeleteUser, user.ID, user.Email); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+		return nil
+	})
 }
