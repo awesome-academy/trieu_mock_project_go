@@ -39,7 +39,7 @@ func (h *UserProfileHandler) GetMyProfile(c *gin.Context) {
 	}
 	userProfile, err := h.userService.GetUserProfile(c.Request.Context(), userId)
 	if err != nil {
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to get user profile")
+		appErrors.RespondCustomError(c, err, "Failed to get user profile")
 		return
 	}
 
@@ -56,7 +56,7 @@ func (h *UserProfileHandler) GetUserProfile(c *gin.Context) {
 
 	userProfile, err := h.userService.GetUserProfile(c.Request.Context(), uint(userId))
 	if err != nil {
-		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to get user profile")
+		appErrors.RespondCustomError(c, err, "Failed to get user profile")
 		return
 	}
 

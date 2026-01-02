@@ -1,0 +1,56 @@
+{{define "pages/admin_skill_create.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {{template "partials/admin_head.html" .}}
+  </head>
+  <body>
+    {{template "partials/admin_navbar.html" .}}
+
+    <div class="container mt-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+          <li class="breadcrumb-item">
+            <a href="/admin/skills">Skills</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Create Skill
+          </li>
+        </ol>
+      </nav>
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h3 class="mb-0">Create New Skill</h3>
+        </div>
+        <div class="card-body">
+          <form id="createSkillForm">
+            <div class="mb-3">
+              <label for="name" class="form-label">Skill Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="name"
+                name="name"
+                required
+                placeholder="e.g. Golang"
+              />
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+              <a href="/admin/skills" class="btn btn-secondary">Cancel</a>
+              <button type="button" id="createSkillBtn" class="btn btn-primary">
+                Create Skill
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {{template "partials/admin_scripts.html" .}}
+    <script src="/static/js/services/admin_skill_service.js"></script>
+    <script src="/static/js/admin_skill_create.js"></script>
+  </body>
+</html>
+{{end}}

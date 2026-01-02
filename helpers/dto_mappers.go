@@ -19,7 +19,10 @@ func MapTeamToTeamSummary(team *models.Team) *dtos.TeamSummary {
 func MapTeamsToTeamSummaries(teams []models.Team) []dtos.TeamSummary {
 	summaries := make([]dtos.TeamSummary, 0, len(teams))
 	for _, team := range teams {
-		summaries = append(summaries, *MapTeamToTeamSummary(&team))
+		summary := MapTeamToTeamSummary(&team)
+		if summary != nil {
+			summaries = append(summaries, *summary)
+		}
 	}
 	return summaries
 }
@@ -40,7 +43,10 @@ func MapProjectToProjectSummary(project *models.Project) *dtos.ProjectSummary {
 func MapProjectsToProjectSummaries(projects []models.Project) []dtos.ProjectSummary {
 	summaries := make([]dtos.ProjectSummary, 0, len(projects))
 	for _, project := range projects {
-		summaries = append(summaries, *MapProjectToProjectSummary(&project))
+		summary := MapProjectToProjectSummary(&project)
+		if summary != nil {
+			summaries = append(summaries, *summary)
+		}
 	}
 	return summaries
 }
@@ -60,7 +66,10 @@ func MapUserSkillToUserSkillSummary(userSkill *models.UserSkill) *dtos.UserSkill
 func MapUserSkillsToUserSkillSummaries(skills []models.UserSkill) []dtos.UserSkillSummary {
 	summaries := make([]dtos.UserSkillSummary, 0, len(skills))
 	for _, skill := range skills {
-		summaries = append(summaries, *MapUserSkillToUserSkillSummary(&skill))
+		summary := MapUserSkillToUserSkillSummary(&skill)
+		if summary != nil {
+			summaries = append(summaries, *summary)
+		}
 	}
 	return summaries
 }
@@ -105,7 +114,10 @@ func MapUserToUserSummary(user *models.User) *dtos.UserSummary {
 func MapUsersToUserSummaries(users []models.User) []dtos.UserSummary {
 	summaries := make([]dtos.UserSummary, 0, len(users))
 	for _, user := range users {
-		summaries = append(summaries, *MapUserToUserSummary(&user))
+		summary := MapUserToUserSummary(&user)
+		if summary != nil {
+			summaries = append(summaries, *summary)
+		}
 	}
 	return summaries
 }
@@ -130,7 +142,10 @@ func MapTeamToTeamDto(team *models.Team) *dtos.Team {
 func MapTeamsToTeamDtos(teams []models.Team) []dtos.Team {
 	teamDtos := make([]dtos.Team, 0, len(teams))
 	for _, team := range teams {
-		teamDtos = append(teamDtos, *MapTeamToTeamDto(&team))
+		dto := MapTeamToTeamDto(&team)
+		if dto != nil {
+			teamDtos = append(teamDtos, *dto)
+		}
 	}
 	return teamDtos
 }
@@ -150,7 +165,10 @@ func MapTeamMemberToTeamMemberSummary(member *models.TeamMember) *dtos.TeamMembe
 func MapTeamMembersToTeamMemberSummaries(members []models.TeamMember) []dtos.TeamMemberSummary {
 	teamMemberSummaries := make([]dtos.TeamMemberSummary, 0, len(members))
 	for _, member := range members {
-		teamMemberSummaries = append(teamMemberSummaries, *MapTeamMemberToTeamMemberSummary(&member))
+		summary := MapTeamMemberToTeamMemberSummary(&member)
+		if summary != nil {
+			teamMemberSummaries = append(teamMemberSummaries, *summary)
+		}
 	}
 	return teamMemberSummaries
 }
@@ -168,7 +186,10 @@ func MapPositionToPositionSummary(position *models.Position) *dtos.PositionSumma
 func MapPositionsToPositionSummaries(positions []models.Position) []dtos.PositionSummary {
 	summaries := make([]dtos.PositionSummary, 0, len(positions))
 	for _, position := range positions {
-		summaries = append(summaries, *MapPositionToPositionSummary(&position))
+		summary := MapPositionToPositionSummary(&position)
+		if summary != nil {
+			summaries = append(summaries, *summary)
+		}
 	}
 	return summaries
 }
@@ -187,7 +208,10 @@ func MapPositionToPositionDto(position *models.Position) *dtos.Position {
 func MapPositionsToPositionDtos(positions []models.Position) []dtos.Position {
 	positionDtos := make([]dtos.Position, 0, len(positions))
 	for _, position := range positions {
-		positionDtos = append(positionDtos, *MapPositionToPositionDto(&position))
+		dto := MapPositionToPositionDto(&position)
+		if dto != nil {
+			positionDtos = append(positionDtos, *dto)
+		}
 	}
 	return positionDtos
 }
@@ -206,7 +230,31 @@ func MapUserToUserDataForSearch(user *models.User) *dtos.UserDataForSearch {
 func MapUsersToUserDataForSearches(users []models.User) []dtos.UserDataForSearch {
 	userDtos := make([]dtos.UserDataForSearch, 0, len(users))
 	for _, user := range users {
-		userDtos = append(userDtos, *MapUserToUserDataForSearch(&user))
+		dto := MapUserToUserDataForSearch(&user)
+		if dto != nil {
+			userDtos = append(userDtos, *dto)
+		}
 	}
 	return userDtos
+}
+
+func MapSkillToSkillSummary(skill *models.Skill) *dtos.SkillSummary {
+	if skill == nil {
+		return nil
+	}
+	return &dtos.SkillSummary{
+		ID:   skill.ID,
+		Name: skill.Name,
+	}
+}
+
+func MapSkillsToSkillSummaries(skills []models.Skill) []dtos.SkillSummary {
+	skillSummaries := make([]dtos.SkillSummary, 0, len(skills))
+	for _, skill := range skills {
+		skillSummary := MapSkillToSkillSummary(&skill)
+		if skillSummary != nil {
+			skillSummaries = append(skillSummaries, *skillSummary)
+		}
+	}
+	return skillSummaries
 }

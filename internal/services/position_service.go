@@ -33,7 +33,7 @@ func (s *PositionService) GetAllPositionsSummary(c context.Context) []dtos.Posit
 func (s *PositionService) SearchPositions(c context.Context, limit, offset int) (*dtos.PositionSearchResponse, error) {
 	positions, totalCount, err := s.positionRepository.SearchPositions(s.db.WithContext(c), limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, appErrors.ErrInternalServerError
 	}
 
 	return &dtos.PositionSearchResponse{
@@ -50,9 +50,9 @@ func (s *PositionService) GetPositionByID(c context.Context, id uint) (*dtos.Pos
 	position, err := s.positionRepository.FindByID(s.db.WithContext(c), id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, appErrors.ErrNotFound
+			return nil, appErrors.ErrPositionNotFound
 		}
-		return nil, err
+		return nil, appErrors.ErrInternalServerError
 	}
 
 	return helpers.MapPositionToPositionDto(position), nil
@@ -64,49 +64,57 @@ func (s *PositionService) CreatePosition(c context.Context, req dtos.CreateOrUpd
 		Abbreviation: strings.TrimSpace(req.Abbreviation),
 	}
 
-	err := s.positionRepository.Create(s.db.WithContext(c), position)
-	if err != nil && err == gorm.ErrDuplicatedKey {
-		return appErrors.ErrPositionAlreadyExists
+	if err := s.positionRepository.Create(s.db.WithContext(c), position); err != nil {
+		if appErrors.IsDuplicatedEntryError(err) {
+			return appErrors.ErrPositionAlreadyExists
+		}
+		return appErrors.ErrInternalServerError
 	}
-	return err
+	return nil
 }
 
 func (s *PositionService) UpdatePosition(c context.Context, id uint, req dtos.CreateOrUpdatePositionRequest) error {
 	currentPosition, err := s.positionRepository.FindByID(s.db.WithContext(c), id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return appErrors.ErrNotFound
+			return appErrors.ErrPositionNotFound
 		}
 
-		return err
+		return appErrors.ErrInternalServerError
 	}
 
 	currentPosition.Name = strings.TrimSpace(req.Name)
 	currentPosition.Abbreviation = strings.TrimSpace(req.Abbreviation)
 
-	err = s.positionRepository.Update(s.db.WithContext(c), currentPosition)
-	if err != nil && err == gorm.ErrDuplicatedKey {
-		return appErrors.ErrPositionAlreadyExists
+	if err := s.positionRepository.Update(s.db.WithContext(c), currentPosition); err != nil {
+		if appErrors.IsDuplicatedEntryError(err) {
+			return appErrors.ErrPositionAlreadyExists
+		}
+		return appErrors.ErrInternalServerError
 	}
-	return err
+	return nil
 }
 
 func (s *PositionService) DeletePosition(c context.Context, id uint) error {
 	_, err := s.positionRepository.FindByID(s.db.WithContext(c), id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return appErrors.ErrNotFound
+			return appErrors.ErrPositionNotFound
 		}
-		return err
+		return appErrors.ErrInternalServerError
 	}
 
 	existedUserUsePosition, err := s.positionRepository.ExistsUsersWithPositionID(s.db.WithContext(c), id)
 	if err != nil {
-		return err
+		return appErrors.ErrInternalServerError
 	}
 	if existedUserUsePosition {
 		return appErrors.ErrPositionInUse
 	}
 
-	return s.positionRepository.Delete(s.db.WithContext(c), id)
+	if err := s.positionRepository.Delete(s.db.WithContext(c), id); err != nil {
+		return appErrors.ErrInternalServerError
+	}
+
+	return nil
 }

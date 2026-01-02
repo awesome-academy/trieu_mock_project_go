@@ -1,0 +1,59 @@
+{{define "pages/admin_skill_edit.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {{template "partials/admin_head.html" .}}
+  </head>
+  <body>
+    {{template "partials/admin_navbar.html" .}}
+
+    <div class="container mt-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+          <li class="breadcrumb-item">
+            <a href="/admin/skills">Skills</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">Edit Skill</li>
+        </ol>
+      </nav>
+
+      {{if .error}}
+      <div class="alert alert-danger" role="alert">{{.error}}</div>
+      <a href="/admin/skills" class="btn btn-secondary">Back to Skills</a>
+      {{else}}
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h3 class="mb-0">Edit Skill: {{.skill.Name}}</h3>
+        </div>
+        <div class="card-body">
+          <form id="editSkillForm" data-id="{{.skill.ID}}">
+            <div class="mb-3">
+              <label for="name" class="form-label">Skill Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="name"
+                name="name"
+                value="{{.skill.Name}}"
+                required
+              />
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+              <a href="/admin/skills" class="btn btn-secondary">Cancel</a>
+              <button type="button" id="updateSkillBtn" class="btn btn-primary">
+                Update Skill
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      {{end}}
+    </div>
+
+    {{template "partials/admin_scripts.html" .}}
+    <script src="/static/js/services/admin_skill_service.js"></script>
+    <script src="/static/js/admin_skill_edit.js"></script>
+  </body>
+</html>
+{{end}}

@@ -6,10 +6,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/go-sql-driver/mysql"
 )
 
 // Errors definitions
 var (
+	ErrInternalServerError     = errors.New("internal server error")
 	ErrInvalidCredentials      = errors.New("invalid credentials")
 	ErrNotFound                = errors.New("not found")
 	ErrForbidden               = errors.New("forbidden")
@@ -19,8 +21,12 @@ var (
 	ErrUnexpectedSigningMethod = errors.New("unexpected signing method")
 	ErrEmailAlreadyExists      = errors.New("email already exists")
 	ErrUserNotFound            = errors.New("user not found")
+	ErrPositionNotFound        = errors.New("position not found")
 	ErrPositionAlreadyExists   = errors.New("position with name already exists")
 	ErrPositionInUse           = errors.New("position is assigned to one or more users")
+	ErrSkillNotFound           = errors.New("skill not found")
+	ErrSkillAlreadyExists      = errors.New("skill with name already exists")
+	ErrSkillInUse              = errors.New("skill is assigned to one or more users")
 )
 
 // Error response
@@ -44,6 +50,47 @@ func RespondError(
 		Code:    status,
 		Message: message,
 		Details: detail,
+	})
+}
+
+func RespondCustomError(
+	c *gin.Context,
+	err error,
+	defaultMessage string,
+) {
+	message := "internal server error"
+	if defaultMessage != "" {
+		message = defaultMessage
+	}
+	status := http.StatusInternalServerError
+	switch err {
+	case ErrNotFound, ErrUserNotFound, ErrSkillNotFound, ErrPositionNotFound:
+		message = err.Error()
+		status = http.StatusNotFound
+	case ErrPositionInUse, ErrSkillInUse:
+		message = err.Error()
+		status = http.StatusBadRequest
+	case ErrForbidden:
+		message = err.Error()
+		status = http.StatusForbidden
+	case ErrInvalidAuthHeader, ErrInvalidCredentials, ErrInvalidToken, ErrMissingAuthHeader, ErrUnexpectedSigningMethod:
+		message = err.Error()
+		status = http.StatusUnauthorized
+	case ErrEmailAlreadyExists, ErrPositionAlreadyExists, ErrSkillAlreadyExists:
+		message = err.Error()
+		status = http.StatusConflict
+	}
+	RespondError(c, status, message)
+}
+
+func RespondPageError(
+	c *gin.Context,
+	status int,
+	templateName string,
+	message string,
+) {
+	c.HTML(status, templateName, gin.H{
+		"error": message,
 	})
 }
 
@@ -88,4 +135,12 @@ func HandleBindError(c *gin.Context, err error) bool {
 		fields,
 	)
 	return true
+}
+
+func IsDuplicatedEntryError(err error) bool {
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
+		return true
+	}
+	return false
 }
