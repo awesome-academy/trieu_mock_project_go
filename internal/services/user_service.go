@@ -13,13 +13,17 @@ import (
 )
 
 type UserService struct {
-	db             *gorm.DB
-	userRepository *repositories.UserRepository
-	teamRepository *repositories.TeamsRepository
+	db                *gorm.DB
+	userRepository    *repositories.UserRepository
+	teamRepository    *repositories.TeamsRepository
+	projectRepository *repositories.ProjectRepository
 }
 
-func NewUserService(db *gorm.DB, userRepository *repositories.UserRepository, teamRepository *repositories.TeamsRepository) *UserService {
-	return &UserService{db: db, userRepository: userRepository, teamRepository: teamRepository}
+func NewUserService(db *gorm.DB,
+	userRepository *repositories.UserRepository,
+	teamRepository *repositories.TeamsRepository,
+	projectRepository *repositories.ProjectRepository) *UserService {
+	return &UserService{db: db, userRepository: userRepository, teamRepository: teamRepository, projectRepository: projectRepository}
 }
 
 func (s *UserService) GetUserProfile(c context.Context, id uint) (*dtos.UserProfile, error) {
@@ -169,6 +173,14 @@ func (s *UserService) DeleteUser(c context.Context, id uint) error {
 	}
 	if exist {
 		return appErrors.ErrCannotDeleteUserBeingTeamLeader
+	}
+
+	exist, err = s.projectRepository.ExistByLeaderId(s.db.WithContext(c), id)
+	if err != nil {
+		return appErrors.ErrInternalServerError
+	}
+	if exist {
+		return appErrors.ErrCannotDeleteUserBeingProjectLeader
 	}
 
 	if err := s.db.WithContext(c).Delete(&models.User{}, id).Error; err != nil {

@@ -17,12 +17,13 @@ type AppContainer struct {
 	CSRFMiddleware      gin.HandlerFunc
 
 	// Services
-	AuthService     *services.AuthService
-	UserService     *services.UserService
-	TeamsService    *services.TeamsService
-	PositionService *services.PositionService
-	ProjectService  *services.ProjectService
-	SkillService    *services.SkillService
+	ValidationService *services.ValidationService
+	AuthService       *services.AuthService
+	UserService       *services.UserService
+	TeamsService      *services.TeamsService
+	PositionService   *services.PositionService
+	ProjectService    *services.ProjectService
+	SkillService      *services.SkillService
 
 	// Handlers
 	AuthHandler        *handlers.AuthHandler
@@ -49,11 +50,12 @@ func NewAppContainer() *AppContainer {
 	skillRepo := repositories.NewSkillRepository()
 
 	// Initialize services
+	validationService := services.NewValidationService(config.DB, teamMemberRepo)
 	authService := services.NewAuthService(config.DB, userRepo)
-	userService := services.NewUserService(config.DB, userRepo, teamsRepo)
+	userService := services.NewUserService(config.DB, userRepo, teamsRepo, projectRepo)
 	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo, userRepo)
 	positionService := services.NewPositionService(config.DB, positionRepo)
-	projectService := services.NewProjectService(config.DB, projectRepo)
+	projectService := services.NewProjectService(config.DB, projectRepo, validationService)
 	skillService := services.NewSkillService(config.DB, skillRepo)
 
 	return &AppContainer{
@@ -63,12 +65,13 @@ func NewAppContainer() *AppContainer {
 		CSRFMiddleware:      middlewares.CSRFMiddleware(),
 
 		// Services
-		AuthService:     authService,
-		UserService:     userService,
-		TeamsService:    teamsService,
-		PositionService: positionService,
-		ProjectService:  projectService,
-		SkillService:    skillService,
+		ValidationService: validationService,
+		AuthService:       authService,
+		UserService:       userService,
+		TeamsService:      teamsService,
+		PositionService:   positionService,
+		ProjectService:    projectService,
+		SkillService:      skillService,
 
 		// Handlers
 		AuthHandler:        handlers.NewAuthHandler(authService),

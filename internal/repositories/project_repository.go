@@ -114,3 +114,16 @@ func (r *ProjectRepository) Update(db *gorm.DB, project *models.Project, memberI
 func (r *ProjectRepository) Delete(db *gorm.DB, id uint) error {
 	return db.Delete(&models.Project{}, id).Error
 }
+
+func (r *ProjectRepository) ExistByLeaderId(db *gorm.DB, leaderId uint) (bool, error) {
+	var exists bool
+	result := db.Model(&models.Project{}).
+		Select("1").
+		Where("leader_id = ?", leaderId).
+		Limit(1).
+		Find(&exists)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return exists, nil
+}

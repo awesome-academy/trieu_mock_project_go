@@ -16,10 +16,11 @@ import (
 type ProjectService struct {
 	db                *gorm.DB
 	projectRepository *repositories.ProjectRepository
+	validationService *ValidationService
 }
 
-func NewProjectService(db *gorm.DB, projectRepository *repositories.ProjectRepository) *ProjectService {
-	return &ProjectService{db: db, projectRepository: projectRepository}
+func NewProjectService(db *gorm.DB, projectRepository *repositories.ProjectRepository, validationService *ValidationService) *ProjectService {
+	return &ProjectService{db: db, projectRepository: projectRepository, validationService: validationService}
 }
 
 func (s *ProjectService) GetAllProjectSummary(c context.Context) []dtos.ProjectSummary {
@@ -60,6 +61,10 @@ func (s *ProjectService) GetProjectByID(c context.Context, id uint) (*dtos.Proje
 }
 
 func (s *ProjectService) CreateProject(c context.Context, req dtos.CreateOrUpdateProjectRequest) error {
+	if appErr := s.validationService.ValidateMembersInTeam(c, req.TeamID, req.MemberIDs); appErr != nil {
+		return appErr
+	}
+
 	var startDate, endDate *time.Time
 	if req.StartDate != nil {
 		startDate = &req.StartDate.Time
@@ -93,6 +98,10 @@ func (s *ProjectService) UpdateProject(c context.Context, id uint, req dtos.Crea
 			return appErrors.ErrProjectNotFound
 		}
 		return appErrors.ErrInternalServerError
+	}
+
+	if appErr := s.validationService.ValidateMembersInTeam(c, req.TeamID, req.MemberIDs); appErr != nil {
+		return appErr
 	}
 
 	var startDate, endDate *time.Time

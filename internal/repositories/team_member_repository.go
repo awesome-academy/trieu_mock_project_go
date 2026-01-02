@@ -102,3 +102,14 @@ func (r *TeamMemberRepository) Update(db *gorm.DB, member *models.TeamMember) er
 			"left_at":   member.LeftAt,
 		}).Error
 }
+
+func (r *TeamMemberRepository) CountActiveMembersInTeamByUserIDs(db *gorm.DB, teamID uint, userIDs []uint) (int64, error) {
+	var count int64
+	result := db.Model(&models.TeamMember{}).
+		Where("team_id = ? AND user_id IN ? AND left_at IS NULL", teamID, userIDs).
+		Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
+}
