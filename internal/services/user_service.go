@@ -192,7 +192,7 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 
 			if activeMember != nil {
 				// Check if user is leader of their current team
-				isLeader, err := s.teamRepository.ExistByLeaderId(tx, id)
+				isLeader, err := s.teamRepository.ExistByLeaderID(tx, id)
 				if err != nil {
 					return appErrors.ErrInternalServerError
 				}
