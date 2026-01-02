@@ -209,3 +209,20 @@ func (h *AdminTeamHandler) RemoveMember(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Member removed successfully"})
 }
+
+func (h *AdminTeamHandler) GetTeamMembersAll(c *gin.Context) {
+	teamIdParam := c.Param("teamId")
+	teamId, err := strconv.Atoi(teamIdParam)
+	if err != nil {
+		appErrors.RespondError(c, http.StatusBadRequest, "Invalid team ID")
+		return
+	}
+
+	members, err := h.teamService.GetAllTeamMembers(c.Request.Context(), uint(teamId))
+	if err != nil {
+		appErrors.RespondCustomError(c, err, "Failed to get team members")
+		return
+	}
+
+	c.JSON(http.StatusOK, members)
+}

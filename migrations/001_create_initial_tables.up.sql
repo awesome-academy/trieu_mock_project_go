@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS `user_skills` (
 -- Create projects table
 CREATE TABLE IF NOT EXISTS `projects` (
   `id` int unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `name` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL UNIQUE KEY,
   `abbreviation` varchar(50) NOT NULL,
   `start_date` date NULL,
   `end_date` date NULL,

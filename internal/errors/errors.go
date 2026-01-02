@@ -24,29 +24,34 @@ func NewAppError(status int, message string) *AppError {
 
 // Errors definitions
 var (
-	ErrInternalServerError             = NewAppError(http.StatusInternalServerError, "internal server error")
-	ErrInvalidCredentials              = NewAppError(http.StatusUnauthorized, "invalid credentials")
-	ErrNotFound                        = NewAppError(http.StatusNotFound, "not found")
-	ErrForbidden                       = NewAppError(http.StatusForbidden, "forbidden")
-	ErrMissingAuthHeader               = NewAppError(http.StatusUnauthorized, "missing authorization header")
-	ErrInvalidAuthHeader               = NewAppError(http.StatusUnauthorized, "invalid authorization header format")
-	ErrInvalidToken                    = NewAppError(http.StatusUnauthorized, "invalid or expired token")
-	ErrUnexpectedSigningMethod         = NewAppError(http.StatusUnauthorized, "unexpected signing method")
-	ErrEmailAlreadyExists              = NewAppError(http.StatusConflict, "email already exists")
-	ErrUserNotFound                    = NewAppError(http.StatusNotFound, "user not found")
-	ErrPositionNotFound                = NewAppError(http.StatusNotFound, "position not found")
-	ErrPositionAlreadyExists           = NewAppError(http.StatusConflict, "position with name already exists")
-	ErrPositionInUse                   = NewAppError(http.StatusBadRequest, "position is assigned to one or more users")
-	ErrSkillNotFound                   = NewAppError(http.StatusNotFound, "skill not found")
-	ErrSkillAlreadyExists              = NewAppError(http.StatusConflict, "skill with name already exists")
-	ErrSkillInUse                      = NewAppError(http.StatusBadRequest, "skill is assigned to one or more users")
-	ErrTeamAlreadyExists               = NewAppError(http.StatusConflict, "team with name already exists")
-	ErrTeamLeaderAlreadyInAnotherTeam  = NewAppError(http.StatusBadRequest, "team leader is already leading another team")
-	ErrTeamNotFound                    = NewAppError(http.StatusNotFound, "team not found")
-	ErrUserAlreadyInTeam               = NewAppError(http.StatusBadRequest, "user is already a member of the team")
-	ErrUserNotInTeam                   = NewAppError(http.StatusBadRequest, "user is not a member of the team")
-	ErrCannotRemoveOrMoveTeamLeader    = NewAppError(http.StatusBadRequest, "cannot remove or move the team leader from the team")
-	ErrCannotDeleteUserBeingTeamLeader = NewAppError(http.StatusBadRequest, "user cannot be deleted because they are a team leader")
+	ErrInternalServerError                = NewAppError(http.StatusInternalServerError, "internal server error")
+	ErrInvalidCredentials                 = NewAppError(http.StatusUnauthorized, "invalid credentials")
+	ErrNotFound                           = NewAppError(http.StatusNotFound, "not found")
+	ErrForbidden                          = NewAppError(http.StatusForbidden, "forbidden")
+	ErrMissingAuthHeader                  = NewAppError(http.StatusUnauthorized, "missing authorization header")
+	ErrInvalidAuthHeader                  = NewAppError(http.StatusUnauthorized, "invalid authorization header format")
+	ErrInvalidToken                       = NewAppError(http.StatusUnauthorized, "invalid or expired token")
+	ErrUnexpectedSigningMethod            = NewAppError(http.StatusUnauthorized, "unexpected signing method")
+	ErrEmailAlreadyExists                 = NewAppError(http.StatusConflict, "email already exists")
+	ErrUserNotFound                       = NewAppError(http.StatusNotFound, "user not found")
+	ErrPositionNotFound                   = NewAppError(http.StatusNotFound, "position not found")
+	ErrPositionAlreadyExists              = NewAppError(http.StatusConflict, "position with name already exists")
+	ErrPositionInUse                      = NewAppError(http.StatusBadRequest, "position is assigned to one or more users")
+	ErrSkillNotFound                      = NewAppError(http.StatusNotFound, "skill not found")
+	ErrSkillAlreadyExists                 = NewAppError(http.StatusConflict, "skill with name already exists")
+	ErrSkillInUse                         = NewAppError(http.StatusBadRequest, "skill is assigned to one or more users")
+	ErrTeamAlreadyExists                  = NewAppError(http.StatusConflict, "team with name already exists")
+	ErrTeamLeaderAlreadyInAnotherTeam     = NewAppError(http.StatusBadRequest, "team leader is already leading another team")
+	ErrTeamNotFound                       = NewAppError(http.StatusNotFound, "team not found")
+	ErrUserAlreadyInTeam                  = NewAppError(http.StatusBadRequest, "user is already a member of the team")
+	ErrUserNotInTeam                      = NewAppError(http.StatusBadRequest, "user is not a member of the team")
+	ErrCannotRemoveOrMoveTeamLeader       = NewAppError(http.StatusBadRequest, "cannot remove or move the team leader from the team")
+	ErrCannotRemoveOrMoveProjectMember    = NewAppError(http.StatusBadRequest, "cannot remove or move the user because they are a member of a project in this team")
+	ErrCannotDeleteUserBeingTeamLeader    = NewAppError(http.StatusBadRequest, "user cannot be deleted because they are a team leader")
+	ErrProjectNotFound                    = NewAppError(http.StatusNotFound, "project not found")
+	ErrProjectAlreadyExists               = NewAppError(http.StatusConflict, "project with name already exists")
+	ErrCannotDeleteUserBeingProjectLeader = NewAppError(http.StatusBadRequest, "user cannot be deleted because they are a project leader")
+	ErrCannotDeleteUserBeingProjectMember = NewAppError(http.StatusBadRequest, "user cannot be deleted because they are a project member")
 )
 
 // Error response
@@ -122,6 +127,14 @@ func HandleBindError(c *gin.Context, err error) bool {
 			fields[field] = "must be at least " + fieldErr.Param() + " characters"
 		case "max":
 			fields[field] = "must be at most " + fieldErr.Param() + " characters"
+		case "ltfield":
+			fields[field] = "must be less than " + fieldErr.Param()
+		case "gtfield":
+			fields[field] = "must be greater than " + fieldErr.Param()
+		case "required_with_end_date":
+			fields[field] = "is required when End Date is provided"
+		case "gt_start_date":
+			fields[field] = "must be greater than Start Date"
 		default:
 			fields[field] = "is invalid"
 		}

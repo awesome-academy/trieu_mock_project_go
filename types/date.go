@@ -22,3 +22,10 @@ func (d *Date) UnmarshalJSON(b []byte) error {
 	d.Time = parsedTime
 	return nil
 }
+
+func (d Date) String() string {
+	if d.IsZero() {
+		return ""
+	}
+	return d.Format("2006-01-02")
+}

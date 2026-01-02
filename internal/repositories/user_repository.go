@@ -68,6 +68,15 @@ func (r *UserRepository) SearchUsers(db *gorm.DB, name *string, teamId *uint, li
 	return users, count, nil
 }
 
+func (r *UserRepository) FindAllUsersSummary(db *gorm.DB) ([]models.User, error) {
+	var users []models.User
+	result := db.Select("id", "name").Find(&users)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return users, nil
+}
+
 func (r *UserRepository) CreateUser(db *gorm.DB, user *models.User) error {
 	if err := db.Create(user).Error; err != nil {
 		return err
