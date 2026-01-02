@@ -24,7 +24,7 @@ func NewUserService(db *gorm.DB, userRepository *repositories.UserRepository) *U
 func (s *UserService) GetUserProfile(c context.Context, id uint) (*dtos.UserProfile, error) {
 	user, err := s.userRepository.FindByID(s.db.WithContext(c), id)
 	if err != nil {
-		return nil, err
+		return nil, appErrors.ErrInternalServerError
 	}
 
 	userProfile := helpers.MapUserToUserProfile(user)
@@ -35,7 +35,7 @@ func (s *UserService) GetUserProfile(c context.Context, id uint) (*dtos.UserProf
 func (s *UserService) SearchUsers(c context.Context, teamId *uint, limit, offset int) (*dtos.UserSearchResponse, error) {
 	users, totalCount, err := s.userRepository.SearchUsers(s.db.WithContext(c), teamId, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, appErrors.ErrInternalServerError
 	}
 
 	response := &dtos.UserSearchResponse{
@@ -53,7 +53,7 @@ func (s *UserService) SearchUsers(c context.Context, teamId *uint, limit, offset
 func (s *UserService) CreateUser(c context.Context, req dtos.CreateOrUpdateUserRequest) error {
 	existedUser, err := s.userRepository.FindByEmail(s.db.WithContext(c), req.Email)
 	if err != nil && err != gorm.ErrRecordNotFound {
-		return err
+		return appErrors.ErrInternalServerError
 	}
 	if existedUser != nil {
 		return appErrors.ErrEmailAlreadyExists
@@ -72,7 +72,7 @@ func (s *UserService) CreateUser(c context.Context, req dtos.CreateOrUpdateUserR
 		CurrentTeamID: req.TeamID,
 	}
 
-	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
 		err := s.userRepository.CreateUser(tx, user)
 		if err != nil {
 			return err
@@ -90,6 +90,12 @@ func (s *UserService) CreateUser(c context.Context, req dtos.CreateOrUpdateUserR
 
 		return s.userRepository.CreateUserSkills(tx, userSkills)
 	})
+
+	if err != nil {
+		return appErrors.ErrInternalServerError
+	}
+
+	return nil
 }
 
 func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUpdateUserRequest) error {
@@ -103,13 +109,13 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 		if err == gorm.ErrRecordNotFound {
 			return appErrors.ErrUserNotFound
 		}
-		return err
+		return appErrors.ErrInternalServerError
 	}
 
 	if currentUser.Email != req.Email {
 		existedUser, err := s.userRepository.FindByEmail(s.db.WithContext(c), req.Email)
 		if err != nil && err != gorm.ErrRecordNotFound {
-			return err
+			return appErrors.ErrInternalServerError
 		}
 		if existedUser != nil {
 			return appErrors.ErrEmailAlreadyExists
@@ -135,7 +141,11 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 		})
 	}
 
-	return s.userRepository.UpdateUser(s.db.WithContext(c), user, userSkills)
+	if err := s.userRepository.UpdateUser(s.db.WithContext(c), user, userSkills); err != nil {
+		return appErrors.ErrInternalServerError
+	}
+
+	return nil
 }
 
 func (s *UserService) DeleteUser(c context.Context, id uint) error {
@@ -144,11 +154,11 @@ func (s *UserService) DeleteUser(c context.Context, id uint) error {
 		if err == gorm.ErrRecordNotFound {
 			return appErrors.ErrUserNotFound
 		}
-		return err
+		return appErrors.ErrInternalServerError
 	}
 
 	if err := s.db.WithContext(c).Delete(&models.User{}, id).Error; err != nil {
-		return err
+		return appErrors.ErrInternalServerError
 	}
 
 	return nil
