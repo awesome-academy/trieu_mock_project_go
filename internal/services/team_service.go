@@ -209,7 +209,7 @@ func (s *TeamsService) UpdateTeam(c context.Context, id uint, req dtos.CreateOrU
 				return appErrors.ErrInternalServerError
 			}
 
-			activeTeamMember, err := s.teamMemberRepository.FindActiveMemberByUserID(s.db.WithContext(c), req.LeaderID)
+			activeTeamMember, err := s.teamMemberRepository.FindActiveMemberByUserID(tx, req.LeaderID)
 			if err != nil && err != gorm.ErrRecordNotFound {
 				return appErrors.ErrInternalServerError
 			}
@@ -239,6 +239,7 @@ func (s *TeamsService) UpdateTeam(c context.Context, id uint, req dtos.CreateOrU
 			if appErrors.IsDuplicatedEntryError(err) {
 				return appErrors.ErrTeamAlreadyExists
 			}
+			return appErrors.ErrInternalServerError
 		}
 		return nil
 	}

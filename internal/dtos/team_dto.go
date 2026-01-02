@@ -57,7 +57,7 @@ type ListTeamMembersResponse struct {
 
 type CreateOrUpdateTeamRequest struct {
 	Name        string  `json:"name" binding:"required,max=255"`
-	Description *string `json:"description" binding:"max=1000"`
+	Description *string `json:"description"`
 	LeaderID    uint    `json:"leader_id" binding:"required"`
 }
 
