@@ -12,7 +12,7 @@ type Team struct {
 
 	// Relationships
 	Leader      User         `gorm:"foreignKey:LeaderID;references:ID"`
-	Members     []User       `gorm:"many2many:team_members;foreignKey:ID;joinForeignKey:TeamID;references:ID;joinReferences:UserID"`
+	Members     []User       `gorm:"foreignKey:CurrentTeamID;references:ID"`
 	Projects    []Project    `gorm:"foreignKey:TeamID;references:ID"`
 	TeamMembers []TeamMember `gorm:"foreignKey:TeamID;references:ID"`
 }

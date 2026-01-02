@@ -54,7 +54,11 @@ func (r *SkillRepository) Create(db *gorm.DB, skill *models.Skill) error {
 }
 
 func (r *SkillRepository) Update(db *gorm.DB, skill *models.Skill) error {
-	return db.Save(skill).Error
+	return db.Model(&models.Skill{}).
+		Where("id = ?", skill.ID).
+		Updates(map[string]interface{}{
+			"name": skill.Name,
+		}).Error
 }
 
 func (r *SkillRepository) Delete(db *gorm.DB, id uint) error {

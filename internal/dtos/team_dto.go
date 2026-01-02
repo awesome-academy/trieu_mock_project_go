@@ -37,7 +37,30 @@ type TeamMemberSummary struct {
 	JoinedAt time.Time `json:"joined_at"`
 }
 
+type TeamMemberHistory struct {
+	ID       uint       `json:"id"`
+	UserID   uint       `json:"user_id"`
+	UserName string     `json:"user_name"`
+	JoinedAt time.Time  `json:"joined_at"`
+	LeftAt   *time.Time `json:"left_at"`
+}
+
+type ListTeamMemberHistoryResponse struct {
+	History []TeamMemberHistory `json:"history"`
+	Page    PaginationResponse  `json:"page"`
+}
+
 type ListTeamMembersResponse struct {
 	Members []TeamMemberSummary `json:"members"`
 	Page    PaginationResponse  `json:"page"`
+}
+
+type CreateOrUpdateTeamRequest struct {
+	Name        string  `json:"name" binding:"required,max=255"`
+	Description *string `json:"description"`
+	LeaderID    uint    `json:"leader_id" binding:"required"`
+}
+
+type AddMemberRequest struct {
+	UserID uint `json:"user_id" binding:"required"`
 }

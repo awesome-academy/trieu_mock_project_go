@@ -15,10 +15,11 @@ import (
 type UserService struct {
 	db             *gorm.DB
 	userRepository *repositories.UserRepository
+	teamRepository *repositories.TeamsRepository
 }
 
-func NewUserService(db *gorm.DB, userRepository *repositories.UserRepository) *UserService {
-	return &UserService{db: db, userRepository: userRepository}
+func NewUserService(db *gorm.DB, userRepository *repositories.UserRepository, teamRepository *repositories.TeamsRepository) *UserService {
+	return &UserService{db: db, userRepository: userRepository, teamRepository: teamRepository}
 }
 
 func (s *UserService) GetUserProfile(c context.Context, id uint) (*dtos.UserProfile, error) {
@@ -32,8 +33,8 @@ func (s *UserService) GetUserProfile(c context.Context, id uint) (*dtos.UserProf
 	return userProfile, nil
 }
 
-func (s *UserService) SearchUsers(c context.Context, teamId *uint, limit, offset int) (*dtos.UserSearchResponse, error) {
-	users, totalCount, err := s.userRepository.SearchUsers(s.db.WithContext(c), teamId, limit, offset)
+func (s *UserService) SearchUsers(c context.Context, name *string, teamId *uint, limit, offset int) (*dtos.UserSearchResponse, error) {
+	users, totalCount, err := s.userRepository.SearchUsers(s.db.WithContext(c), name, teamId, limit, offset)
 	if err != nil {
 		return nil, appErrors.ErrInternalServerError
 	}
@@ -141,10 +142,15 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 		})
 	}
 
-	if err := s.userRepository.UpdateUser(s.db.WithContext(c), user, userSkills); err != nil {
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		if err := s.userRepository.UpdateUser(tx, user); err != nil {
+			return err
+		}
+		return s.userRepository.UpdateUserSkills(tx, id, userSkills)
+	})
+	if err != nil {
 		return appErrors.ErrInternalServerError
 	}
-
 	return nil
 }
 
@@ -155,6 +161,14 @@ func (s *UserService) DeleteUser(c context.Context, id uint) error {
 			return appErrors.ErrUserNotFound
 		}
 		return appErrors.ErrInternalServerError
+	}
+
+	exist, err := s.teamRepository.ExistByLeaderID(s.db.WithContext(c), id)
+	if err != nil {
+		return appErrors.ErrInternalServerError
+	}
+	if exist {
+		return appErrors.ErrCannotDeleteUserBeingTeamLeader
 	}
 
 	if err := s.db.WithContext(c).Delete(&models.User{}, id).Error; err != nil {

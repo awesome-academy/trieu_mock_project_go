@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 -- Create teams table
 CREATE TABLE IF NOT EXISTS `teams` (
   `id` int unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `name` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL UNIQUE KEY,
   `description` text NULL,
   `leader_id` int unsigned NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -49,6 +49,16 @@ CREATE TABLE IF NOT EXISTS `team_members` (
   CONSTRAINT `fk_team_members_team_id` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   KEY `idx_team_members_team_id` (`team_id`)
 );
+ALTER TABLE `team_members`
+ADD COLUMN `active_user_id_key` int unsigned
+  GENERATED ALWAYS AS (
+    CASE 
+      WHEN `left_at` IS NULL THEN `user_id` 
+      ELSE NULL 
+    END
+  );
+CREATE UNIQUE INDEX `ux_active_user_in_team`
+  ON `team_members` (`active_user_id_key`);
 
 -- Create skills table
 CREATE TABLE IF NOT EXISTS `skills` (

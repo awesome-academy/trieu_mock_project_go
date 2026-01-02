@@ -52,7 +52,12 @@ func (r *PositionRepository) Create(db *gorm.DB, position *models.Position) erro
 }
 
 func (r *PositionRepository) Update(db *gorm.DB, position *models.Position) error {
-	return db.Save(position).Error
+	return db.Model(&models.Position{}).
+		Where("id = ?", position.ID).
+		Updates(map[string]interface{}{
+			"name":         position.Name,
+			"abbreviation": position.Abbreviation,
+		}).Error
 }
 
 func (r *PositionRepository) Delete(db *gorm.DB, id uint) error {
