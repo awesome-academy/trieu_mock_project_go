@@ -52,6 +52,7 @@ var (
 	ErrProjectAlreadyExists               = NewAppError(http.StatusConflict, "project with name already exists")
 	ErrCannotDeleteUserBeingProjectLeader = NewAppError(http.StatusBadRequest, "user cannot be deleted because they are a project leader")
 	ErrCannotDeleteUserBeingProjectMember = NewAppError(http.StatusBadRequest, "user cannot be deleted because they are a project member")
+	ErrActivityLogNotFound                = NewAppError(http.StatusNotFound, "activity log not found")
 )
 
 // Error response

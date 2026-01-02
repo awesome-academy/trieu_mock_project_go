@@ -129,3 +129,7 @@ func (r *UserRepository) UpdateUsersCurrentTeamToNullByTeamID(db *gorm.DB, teamI
 		Where("current_team_id = ?", teamID).
 		Update("current_team_id", nil).Error
 }
+
+func (r *UserRepository) DeleteUser(db *gorm.DB, id uint) error {
+	return db.Delete(&models.User{}, id).Error
+}

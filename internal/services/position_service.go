@@ -7,6 +7,7 @@ import (
 	"trieu_mock_project_go/internal/dtos"
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/repositories"
+	"trieu_mock_project_go/internal/types"
 	"trieu_mock_project_go/models"
 
 	"gorm.io/gorm"
@@ -15,10 +16,11 @@ import (
 type PositionService struct {
 	db                 *gorm.DB
 	positionRepository *repositories.PositionRepository
+	activityLogService *ActivityLogService
 }
 
-func NewPositionService(db *gorm.DB, positionRepository *repositories.PositionRepository) *PositionService {
-	return &PositionService{db: db, positionRepository: positionRepository}
+func NewPositionService(db *gorm.DB, positionRepository *repositories.PositionRepository, activityLogService *ActivityLogService) *PositionService {
+	return &PositionService{db: db, positionRepository: positionRepository, activityLogService: activityLogService}
 }
 
 func (s *PositionService) GetAllPositionsSummary(c context.Context) []dtos.PositionSummary {
@@ -64,13 +66,19 @@ func (s *PositionService) CreatePosition(c context.Context, req dtos.CreateOrUpd
 		Abbreviation: strings.TrimSpace(req.Abbreviation),
 	}
 
-	if err := s.positionRepository.Create(s.db.WithContext(c), position); err != nil {
-		if appErrors.IsDuplicatedEntryError(err) {
-			return appErrors.ErrPositionAlreadyExists
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		if err := s.positionRepository.Create(tx, position); err != nil {
+			if appErrors.IsDuplicatedEntryError(err) {
+				return appErrors.ErrPositionAlreadyExists
+			}
+			return appErrors.ErrInternalServerError
 		}
-		return appErrors.ErrInternalServerError
-	}
-	return nil
+
+		if err := s.activityLogService.LogActivityDb(c, tx, types.CreatePosition, position.ID, position.Name); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+		return nil
+	})
 }
 
 func (s *PositionService) UpdatePosition(c context.Context, id uint, req dtos.CreateOrUpdatePositionRequest) error {
@@ -86,17 +94,23 @@ func (s *PositionService) UpdatePosition(c context.Context, id uint, req dtos.Cr
 	currentPosition.Name = strings.TrimSpace(req.Name)
 	currentPosition.Abbreviation = strings.TrimSpace(req.Abbreviation)
 
-	if err := s.positionRepository.Update(s.db.WithContext(c), currentPosition); err != nil {
-		if appErrors.IsDuplicatedEntryError(err) {
-			return appErrors.ErrPositionAlreadyExists
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		if err := s.positionRepository.Update(tx, currentPosition); err != nil {
+			if appErrors.IsDuplicatedEntryError(err) {
+				return appErrors.ErrPositionAlreadyExists
+			}
+			return appErrors.ErrInternalServerError
 		}
-		return appErrors.ErrInternalServerError
-	}
-	return nil
+
+		if err := s.activityLogService.LogActivityDb(c, tx, types.UpdatePosition, currentPosition.ID, currentPosition.Name); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+		return nil
+	})
 }
 
 func (s *PositionService) DeletePosition(c context.Context, id uint) error {
-	_, err := s.positionRepository.FindByID(s.db.WithContext(c), id)
+	position, err := s.positionRepository.FindByID(s.db.WithContext(c), id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return appErrors.ErrPositionNotFound
@@ -112,9 +126,14 @@ func (s *PositionService) DeletePosition(c context.Context, id uint) error {
 		return appErrors.ErrPositionInUse
 	}
 
-	if err := s.positionRepository.Delete(s.db.WithContext(c), id); err != nil {
-		return appErrors.ErrInternalServerError
-	}
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		if err := s.positionRepository.Delete(tx, id); err != nil {
+			return appErrors.ErrInternalServerError
+		}
 
-	return nil
+		if err := s.activityLogService.LogActivityDb(c, tx, types.DeletePosition, position.ID, position.Name); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+		return nil
+	})
 }

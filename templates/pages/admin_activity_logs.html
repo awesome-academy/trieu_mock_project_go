@@ -1,0 +1,39 @@
+{{define "pages/admin_activity_logs.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {{template "partials/admin_head.html" .}}
+  </head>
+  <body>
+    {{template "partials/admin_navbar.html" .}}
+
+    <div class="container mt-4">
+      <div class="row mb-4 align-items-center">
+        <div class="col">
+          <h1>Activity Logs Management</h1>
+        </div>
+      </div>
+
+      <div id="activityLogListContainer" style="min-height: 400px">
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <template id="loadingTemplate">
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    </template>
+
+    {{template "partials/admin_scripts.html" .}}
+    <script src="/static/js/services/admin_activity_log_service.js"></script>
+    <script src="/static/js/admin_activity_logs.js"></script>
+  </body>
+</html>
+{{end}}

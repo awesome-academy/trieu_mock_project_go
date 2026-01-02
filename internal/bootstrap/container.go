@@ -31,13 +31,14 @@ type AppContainer struct {
 	UserProfileHandler *handlers.UserProfileHandler
 	TeamsHandler       *handlers.TeamsHandler
 	// Admin Handlers
-	AdminAuthHandler      *handlers.AdminAuthHandler
-	AdminDashboardHandler *handlers.AdminDashboardHandler
-	AdminUserHandler      *handlers.AdminUserHandler
-	AdminPositionHandler  *handlers.AdminPositionHandler
-	AdminSkillHandler     *handlers.AdminSkillHandler
-	AdminTeamHandler      *handlers.AdminTeamHandler
-	AdminProjectHandler   *handlers.AdminProjectHandler
+	AdminAuthHandler        *handlers.AdminAuthHandler
+	AdminDashboardHandler   *handlers.AdminDashboardHandler
+	AdminUserHandler        *handlers.AdminUserHandler
+	AdminPositionHandler    *handlers.AdminPositionHandler
+	AdminSkillHandler       *handlers.AdminSkillHandler
+	AdminTeamHandler        *handlers.AdminTeamHandler
+	AdminProjectHandler     *handlers.AdminProjectHandler
+	AdminActivityLogHandler *handlers.AdminActivityLogHandler
 }
 
 func NewAppContainer() *AppContainer {
@@ -49,15 +50,17 @@ func NewAppContainer() *AppContainer {
 	projectRepo := repositories.NewProjectRepository()
 	projectMemberRepo := repositories.NewProjectMemberRepository()
 	skillRepo := repositories.NewSkillRepository()
+	activityLogRepo := repositories.NewActivityLogRepository()
 
 	// Initialize services
+	activityLogService := services.NewActivityLogService(config.DB, activityLogRepo)
 	validationService := services.NewValidationService(config.DB, teamMemberRepo)
-	authService := services.NewAuthService(config.DB, userRepo)
-	userService := services.NewUserService(config.DB, userRepo, teamsRepo, projectRepo, projectMemberRepo, teamMemberRepo)
-	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo, userRepo, projectRepo, projectMemberRepo)
-	positionService := services.NewPositionService(config.DB, positionRepo)
-	projectService := services.NewProjectService(config.DB, projectRepo, validationService)
-	skillService := services.NewSkillService(config.DB, skillRepo)
+	authService := services.NewAuthService(config.DB, userRepo, activityLogService)
+	userService := services.NewUserService(config.DB, userRepo, teamsRepo, projectRepo, projectMemberRepo, teamMemberRepo, activityLogService)
+	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo, userRepo, projectRepo, projectMemberRepo, activityLogService)
+	positionService := services.NewPositionService(config.DB, positionRepo, activityLogService)
+	projectService := services.NewProjectService(config.DB, projectRepo, validationService, activityLogService)
+	skillService := services.NewSkillService(config.DB, skillRepo, activityLogService)
 
 	return &AppContainer{
 		// Middlewares
@@ -80,12 +83,13 @@ func NewAppContainer() *AppContainer {
 		UserProfileHandler: handlers.NewUserProfileHandler(userService),
 		TeamsHandler:       handlers.NewTeamsHandler(teamsService),
 		// Admin Handlers
-		AdminAuthHandler:      handlers.NewAdminAuthHandler(authService),
-		AdminDashboardHandler: handlers.NewAdminDashboardHandler(userService),
-		AdminUserHandler:      handlers.NewAdminUserHandler(userService, teamsService, positionService, skillService),
-		AdminPositionHandler:  handlers.NewAdminPositionHandler(positionService),
-		AdminSkillHandler:     handlers.NewAdminSkillHandler(skillService),
-		AdminTeamHandler:      handlers.NewAdminTeamHandler(teamsService, userService),
-		AdminProjectHandler:   handlers.NewAdminProjectHandler(projectService, teamsService, userService),
+		AdminAuthHandler:        handlers.NewAdminAuthHandler(authService, activityLogService),
+		AdminDashboardHandler:   handlers.NewAdminDashboardHandler(userService),
+		AdminUserHandler:        handlers.NewAdminUserHandler(userService, teamsService, positionService, skillService),
+		AdminPositionHandler:    handlers.NewAdminPositionHandler(positionService),
+		AdminSkillHandler:       handlers.NewAdminSkillHandler(skillService),
+		AdminTeamHandler:        handlers.NewAdminTeamHandler(teamsService, userService),
+		AdminProjectHandler:     handlers.NewAdminProjectHandler(projectService, teamsService, userService),
+		AdminActivityLogHandler: handlers.NewAdminActivityLogHandler(activityLogService),
 	}
 }

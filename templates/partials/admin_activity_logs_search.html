@@ -1,0 +1,71 @@
+{{define "partials/admin_activity_logs_search.html"}} {{if .error}}
+<div class="alert alert-danger">{{.error}}</div>
+{{else}}
+<div class="table-responsive">
+  <table class="table table-striped table-hover">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>User</th>
+        <th>Action</th>
+        <th>Description</th>
+        <th>Created At</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .logs}}
+      <tr>
+        <td>{{.ID}}</td>
+        <td>{{.UserName}} (ID: {{.UserID}})</td>
+        <td><span class="badge bg-info text-dark">{{.Action}}</span></td>
+        <td>{{.Description}}</td>
+        <td>{{.CreatedAt.Format "2006-01-02 15:04:05"}}</td>
+        <td>
+          <button
+            class="btn btn-sm btn-danger delete-log-btn"
+            data-id="{{.ID}}"
+            aria-label="Delete activity log {{.ID}}"
+          >
+            Delete
+          </button>
+        </td>
+      </tr>
+      {{else}}
+      <tr>
+        <td colspan="6" class="text-center">No activity logs found</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+
+{{if gt .page.Total 0}}
+<nav aria-label="Activity log pagination">
+  <ul class="pagination justify-content-center">
+    {{$currentOffset := .page.Offset}} {{$limit := .page.Limit}} {{$total :=
+    .page.Total}}
+
+    <li class="page-item {{if le $currentOffset 0}}disabled{{end}}">
+      <a class="page-link" href="#" data-offset="{{sub $currentOffset $limit}}"
+        >Previous</a
+      >
+    </li>
+
+    <li class="page-item disabled">
+      <span class="page-link">
+        Showing {{add $currentOffset 1}} to {{min (int64 (add $currentOffset
+        $limit)) $total}} of {{$total}}
+      </span>
+    </li>
+
+    <li
+      class="page-item {{if ge (int64 (add $currentOffset $limit)) $total}}disabled{{end}}"
+    >
+      <a class="page-link" href="#" data-offset="{{add $currentOffset $limit}}"
+        >Next</a
+      >
+    </li>
+  </ul>
+</nav>
+{{end}} {{end}} {{end}}

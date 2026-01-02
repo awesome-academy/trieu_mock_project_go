@@ -8,19 +8,21 @@ import (
 	"trieu_mock_project_go/internal/dtos"
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/repositories"
+	"trieu_mock_project_go/internal/types"
 	"trieu_mock_project_go/models"
 
 	"gorm.io/gorm"
 )
 
 type ProjectService struct {
-	db                *gorm.DB
-	projectRepository *repositories.ProjectRepository
-	validationService *ValidationService
+	db                 *gorm.DB
+	projectRepository  *repositories.ProjectRepository
+	validationService  *ValidationService
+	activityLogService *ActivityLogService
 }
 
-func NewProjectService(db *gorm.DB, projectRepository *repositories.ProjectRepository, validationService *ValidationService) *ProjectService {
-	return &ProjectService{db: db, projectRepository: projectRepository, validationService: validationService}
+func NewProjectService(db *gorm.DB, projectRepository *repositories.ProjectRepository, validationService *ValidationService, activityLogService *ActivityLogService) *ProjectService {
+	return &ProjectService{db: db, projectRepository: projectRepository, validationService: validationService, activityLogService: activityLogService}
 }
 
 func (s *ProjectService) GetAllProjectSummary(c context.Context) []dtos.ProjectSummary {
@@ -82,13 +84,19 @@ func (s *ProjectService) CreateProject(c context.Context, req dtos.CreateOrUpdat
 		TeamID:       req.TeamID,
 	}
 
-	if err := s.projectRepository.Create(s.db.WithContext(c), project, req.MemberIDs); err != nil {
-		if appErrors.IsDuplicatedEntryError(err) {
-			return appErrors.ErrProjectAlreadyExists
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		if err := s.projectRepository.Create(tx, project, req.MemberIDs); err != nil {
+			if appErrors.IsDuplicatedEntryError(err) {
+				return appErrors.ErrProjectAlreadyExists
+			}
+			return appErrors.ErrInternalServerError
 		}
-		return appErrors.ErrInternalServerError
-	}
-	return nil
+
+		if err := s.activityLogService.LogActivityDb(c, tx, types.CreateProject, project.ID, project.Name); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+		return nil
+	})
 }
 
 func (s *ProjectService) UpdateProject(c context.Context, id uint, req dtos.CreateOrUpdateProjectRequest) error {
@@ -122,14 +130,20 @@ func (s *ProjectService) UpdateProject(c context.Context, id uint, req dtos.Crea
 		TeamID:       req.TeamID,
 	}
 
-	if err := s.projectRepository.Update(s.db.WithContext(c), project, req.MemberIDs); err != nil {
-		return appErrors.ErrInternalServerError
-	}
-	return nil
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		if err := s.projectRepository.Update(tx, project, req.MemberIDs); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+
+		if err := s.activityLogService.LogActivityDb(c, tx, types.UpdateProject, project.ID, project.Name); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+		return nil
+	})
 }
 
 func (s *ProjectService) DeleteProject(c context.Context, id uint) error {
-	_, err := s.projectRepository.FindByID(s.db.WithContext(c), id)
+	project, err := s.projectRepository.FindByID(s.db.WithContext(c), id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return appErrors.ErrProjectNotFound
@@ -137,9 +151,14 @@ func (s *ProjectService) DeleteProject(c context.Context, id uint) error {
 		return appErrors.ErrInternalServerError
 	}
 
-	if err := s.projectRepository.Delete(s.db.WithContext(c), id); err != nil {
-		return appErrors.ErrInternalServerError
-	}
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		if err := s.projectRepository.Delete(tx, id); err != nil {
+			return appErrors.ErrInternalServerError
+		}
 
-	return nil
+		if err := s.activityLogService.LogActivityDb(c, tx, types.DeleteProject, project.ID, project.Name); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+		return nil
+	})
 }

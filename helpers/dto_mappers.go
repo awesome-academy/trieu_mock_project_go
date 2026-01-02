@@ -339,3 +339,28 @@ func MapProjectToProjectDetail(project *models.Project) *dtos.ProjectDetail {
 		Members:      MapUsersToUserSummaries(project.Members),
 	}
 }
+
+func MapActivityLogToActivityLogSummary(log *models.ActivityLog) *dtos.ActivityLogSummary {
+	if log == nil {
+		return nil
+	}
+	return &dtos.ActivityLogSummary{
+		ID:          log.ID,
+		Action:      log.Action,
+		UserID:      log.UserID,
+		UserName:    log.User.Name,
+		Description: log.Description,
+		CreatedAt:   log.CreatedAt,
+	}
+}
+
+func MapActivityLogsToActivityLogSummaries(logs []models.ActivityLog) []dtos.ActivityLogSummary {
+	summaries := make([]dtos.ActivityLogSummary, 0, len(logs))
+	for _, log := range logs {
+		summary := MapActivityLogToActivityLogSummary(&log)
+		if summary != nil {
+			summaries = append(summaries, *summary)
+		}
+	}
+	return summaries
+}
