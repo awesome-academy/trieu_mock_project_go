@@ -65,10 +65,8 @@ func (s *ActivityLogService) LogActivityDb(c context.Context, db *gorm.DB, actio
 	}
 
 	var description *string
-	if action.DescriptionFormat != "" {
-		desc := fmt.Sprintf(action.DescriptionFormat, allParams...)
-		description = &desc
-	}
+	desc := fmt.Sprintf(action.DescriptionFormat, allParams...)
+	description = &desc
 
 	activityLog := &models.ActivityLog{
 		UserID:      userId,
