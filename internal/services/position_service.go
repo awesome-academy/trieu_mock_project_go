@@ -9,6 +9,7 @@ import (
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/repositories"
 	"trieu_mock_project_go/internal/types"
+	"trieu_mock_project_go/internal/utils"
 	"trieu_mock_project_go/models"
 
 	"gorm.io/gorm"
@@ -154,4 +155,70 @@ func (s *PositionService) ExportPositionsToCSV(c context.Context) ([][]string, e
 		})
 	}
 	return data, nil
+}
+
+func (s *PositionService) ImportPositionsFromCSV(c context.Context, data [][]string) error {
+	if len(data) <= 1 {
+		return appErrors.ErrNoCSVDataToImport
+	}
+
+	positionsMap := make(map[string]*dtos.PositionImportData)
+	uniqueNames := utils.NewSet[string]()
+
+	for i, row := range data {
+		if i == 0 {
+			continue
+		}
+		if len(row) < 2 {
+			return fmt.Errorf("row %d: invalid number of columns", i+1)
+		}
+
+		name := strings.TrimSpace(row[0])
+		abbreviation := strings.TrimSpace(row[1])
+
+		if name == "" || abbreviation == "" {
+			return fmt.Errorf("row %d: name and abbreviation are required", i+1)
+		}
+
+		if !uniqueNames.Has(name) {
+			uniqueNames.Add(name)
+			positionsMap[name] = &dtos.PositionImportData{
+				Name:         name,
+				Abbreviation: abbreviation,
+			}
+		}
+	}
+
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		positions := make([]models.Position, 0, len(positionsMap))
+		for _, name := range uniqueNames.ToSlice() {
+			p := positionsMap[name]
+			positions = append(positions, models.Position{
+				Name:         p.Name,
+				Abbreviation: p.Abbreviation,
+			})
+		}
+
+		if err := s.positionRepository.CreateInBatches(tx, positions, 100); err != nil {
+			if appErrors.IsDuplicatedEntryError(err) {
+				return appErrors.ErrPositionAlreadyExists
+			}
+			return appErrors.ErrInternalServerError
+		}
+
+		activityLogsToInsert := make([]models.ActivityLog, 0, len(positions))
+		for _, p := range positions {
+			activityLog, err := s.activityLogService.createLogActivityModel(c, types.CreatePosition, p.ID, p.Name)
+			if err != nil {
+				return err
+			}
+			activityLogsToInsert = append(activityLogsToInsert, *activityLog)
+		}
+
+		if err := s.activityLogService.createInBatches(tx, activityLogsToInsert, 100); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+
+		return nil
+	})
 }

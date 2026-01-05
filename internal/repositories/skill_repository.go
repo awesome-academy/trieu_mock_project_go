@@ -53,6 +53,10 @@ func (r *SkillRepository) Create(db *gorm.DB, skill *models.Skill) error {
 	return db.Create(skill).Error
 }
 
+func (r *SkillRepository) CreateInBatches(db *gorm.DB, skills []models.Skill, batchSize int) error {
+	return db.CreateInBatches(skills, batchSize).Error
+}
+
 func (r *SkillRepository) Update(db *gorm.DB, skill *models.Skill) error {
 	return db.Model(&models.Skill{}).
 		Where("id = ?", skill.ID).
@@ -79,4 +83,13 @@ func (r *SkillRepository) ExistsUsersWithSkillID(db *gorm.DB, skillID uint) (boo
 		return false, err
 	}
 	return true, nil
+}
+
+func (r *SkillRepository) CountByIDs(db *gorm.DB, ids []uint) (int64, error) {
+	var count int64
+	result := db.Model(&models.Skill{}).Where("id IN ?", ids).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
 }

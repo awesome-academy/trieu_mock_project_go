@@ -10,6 +10,7 @@ import (
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/repositories"
 	"trieu_mock_project_go/internal/types"
+	"trieu_mock_project_go/internal/utils"
 	"trieu_mock_project_go/models"
 
 	"gorm.io/gorm"
@@ -197,4 +198,137 @@ func (s *ProjectService) ExportProjectsToCSV(c context.Context) ([][]string, err
 		}
 	}
 	return data, nil
+}
+
+func (s *ProjectService) ImportProjectsFromCSV(c context.Context, data [][]string) error {
+	if len(data) <= 1 {
+		return appErrors.ErrNoCSVDataToImport
+	}
+
+	projectsMap := make(map[string]*dtos.ProjectImportData)
+	projectNameSet := utils.NewSet[string]()
+	teamIDSet := utils.NewSet[uint]()
+	userIDSet := utils.NewSet[uint]()
+
+	for i, row := range data {
+		if i == 0 {
+			continue
+		}
+		if len(row) < 10 {
+			return fmt.Errorf("row %d: invalid number of columns", i+1)
+		}
+
+		name := strings.TrimSpace(row[0])
+		abbreviation := strings.TrimSpace(row[1])
+		startDateStr := strings.TrimSpace(row[2])
+		endDateStr := strings.TrimSpace(row[3])
+		leaderIDStr := strings.TrimSpace(row[4])
+		teamIDStr := strings.TrimSpace(row[6])
+		memberIDStr := strings.TrimSpace(row[8])
+
+		if name == "" {
+			return fmt.Errorf("row %d: project name is required", i+1)
+		}
+
+		rowNumber := i + 1
+
+		p, ok := projectsMap[name]
+		if !ok {
+			var startDate, endDate *time.Time
+			if startDateStr != "" {
+				t, err := time.Parse("2006-01-02", startDateStr)
+				if err == nil {
+					startDate = &t
+				}
+			}
+			if endDateStr != "" {
+				t, err := time.Parse("2006-01-02", endDateStr)
+				if err == nil {
+					endDate = &t
+				}
+			}
+
+			var leaderID uint
+			if _, err := fmt.Sscanf(leaderIDStr, "%d", &leaderID); err != nil {
+				return fmt.Errorf("row %d: invalid leader ID", rowNumber)
+			}
+
+			var teamID uint
+			if _, err := fmt.Sscanf(teamIDStr, "%d", &teamID); err != nil {
+				return fmt.Errorf("row %d: invalid team ID", rowNumber)
+			}
+
+			p = &dtos.ProjectImportData{
+				Name:         name,
+				Abbreviation: abbreviation,
+				StartDate:    startDate,
+				EndDate:      endDate,
+				LeaderID:     leaderID,
+				TeamID:       teamID,
+				MemberIDs:    []uint{},
+			}
+			projectsMap[name] = p
+
+			projectNameSet.Add(name)
+			teamIDSet.Add(teamID)
+			userIDSet.Add(leaderID)
+		}
+
+		if memberIDStr != "" {
+			var memberID uint
+			if _, err := fmt.Sscanf(memberIDStr, "%d", &memberID); err != nil {
+				return fmt.Errorf("row %d: invalid member ID", rowNumber)
+			}
+			p.MemberIDs = append(p.MemberIDs, memberID)
+			userIDSet.Add(memberID)
+		}
+	}
+
+	for name, p := range projectsMap {
+		if err := s.validationService.ValidateMembersInTeam(c, p.TeamID, p.MemberIDs); err != nil {
+			return fmt.Errorf("Project '%s': %s", name, err.Error())
+		}
+	}
+
+	if err := s.validationService.validateUserIDs(userIDSet.ToSlice()); err != nil {
+		return err
+	}
+
+	if err := s.validationService.validateTeamIDs(teamIDSet.ToSlice()); err != nil {
+		return err
+	}
+
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		activityLogs := make([]models.ActivityLog, 0, len(projectNameSet))
+
+		for _, p := range projectsMap {
+			project := &models.Project{
+				Name:         p.Name,
+				Abbreviation: p.Abbreviation,
+				StartDate:    p.StartDate,
+				EndDate:      p.EndDate,
+				LeaderID:     p.LeaderID,
+				TeamID:       p.TeamID,
+			}
+
+			if err := s.projectRepository.Create(tx, project, p.MemberIDs); err != nil {
+				if appErrors.IsDuplicatedEntryError(err) {
+					return appErrors.ErrProjectAlreadyExists
+				}
+				return appErrors.ErrInternalServerError
+			}
+
+			activityLog, err := s.activityLogService.createLogActivityModel(c, types.CreateProject, project.ID, project.Name)
+			if err != nil {
+				return err
+			}
+			activityLogs = append(activityLogs, *activityLog)
+		}
+
+		if err := s.activityLogService.createInBatches(tx, activityLogs, 100); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+
+		return nil
+	})
 }

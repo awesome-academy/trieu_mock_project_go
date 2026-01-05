@@ -27,7 +27,7 @@ func (s *ActivityLogService) LogActivity(c context.Context, action types.Activit
 	return s.LogActivityDb(c, s.db.WithContext(c), action, params...)
 }
 
-func (s *ActivityLogService) LogActivityDb(c context.Context, db *gorm.DB, action types.ActivityLog, params ...interface{}) *appErrors.AppError {
+func (s *ActivityLogService) createLogActivityModel(c context.Context, action types.ActivityLog, params ...interface{}) (*models.ActivityLog, *appErrors.AppError) {
 	var userId uint
 	var userEmail string
 	var allParams []interface{}
@@ -53,13 +53,13 @@ func (s *ActivityLogService) LogActivityDb(c context.Context, db *gorm.DB, actio
 		log.Default().Println("User ID from context:", userId)
 		if !ok {
 			log.Default().Println("Failed to get user_id from context")
-			return appErrors.ErrInternalServerError
+			return nil, appErrors.ErrInternalServerError
 		}
 		userEmail, ok = c.Value("email").(string)
 		log.Default().Println("User Email from context:", userEmail)
 		if !ok {
 			log.Default().Println("Failed to get email from context")
-			return appErrors.ErrInternalServerError
+			return nil, appErrors.ErrInternalServerError
 		}
 		allParams = append([]interface{}{userId, userEmail}, params...)
 	}
@@ -74,6 +74,15 @@ func (s *ActivityLogService) LogActivityDb(c context.Context, db *gorm.DB, actio
 		UserID:      userId,
 		Action:      action.Value,
 		Description: description,
+	}
+
+	return activityLog, nil
+}
+
+func (s *ActivityLogService) LogActivityDb(c context.Context, db *gorm.DB, action types.ActivityLog, params ...interface{}) *appErrors.AppError {
+	activityLog, err := s.createLogActivityModel(c, action, params...)
+	if err != nil {
+		return err
 	}
 
 	if er := s.activityLogRepository.Create(db, activityLog); er != nil {
@@ -112,5 +121,12 @@ func (s *ActivityLogService) DeleteActivityLog(c context.Context, id uint) *appE
 		return appErrors.ErrInternalServerError
 	}
 
+	return nil
+}
+
+func (s *ActivityLogService) createInBatches(db *gorm.DB, activityLogs []models.ActivityLog, batchSize int) *appErrors.AppError {
+	if err := s.activityLogRepository.CreateInBatches(db, activityLogs, batchSize); err != nil {
+		return appErrors.ErrInternalServerError
+	}
 	return nil
 }

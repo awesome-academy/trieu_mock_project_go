@@ -98,3 +98,12 @@ func (r *TeamsRepository) ExistByLeaderID(db *gorm.DB, leaderID uint) (bool, err
 	}
 	return count > 0, nil
 }
+
+func (r *TeamsRepository) CountByIDs(db *gorm.DB, ids []uint) (int64, error) {
+	var count int64
+	result := db.Model(&models.Team{}).Where("id IN ?", ids).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
+}

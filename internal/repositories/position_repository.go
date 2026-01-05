@@ -51,6 +51,10 @@ func (r *PositionRepository) Create(db *gorm.DB, position *models.Position) erro
 	return db.Create(position).Error
 }
 
+func (r *PositionRepository) CreateInBatches(db *gorm.DB, positions []models.Position, batchSize int) error {
+	return db.CreateInBatches(positions, batchSize).Error
+}
+
 func (r *PositionRepository) Update(db *gorm.DB, position *models.Position) error {
 	return db.Model(&models.Position{}).
 		Where("id = ?", position.ID).
@@ -78,4 +82,13 @@ func (r *PositionRepository) ExistsUsersWithPositionID(db *gorm.DB, positionID u
 		return false, err
 	}
 	return true, nil
+}
+
+func (r *PositionRepository) CountByIDs(db *gorm.DB, ids []uint) (int64, error) {
+	var count int64
+	result := db.Model(&models.Position{}).Where("id IN ?", ids).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
 }

@@ -9,6 +9,7 @@ import (
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/repositories"
 	"trieu_mock_project_go/internal/types"
+	"trieu_mock_project_go/internal/utils"
 	"trieu_mock_project_go/models"
 
 	"gorm.io/gorm"
@@ -150,4 +151,61 @@ func (s *SkillService) ExportSkillsToCSV(c context.Context) ([][]string, error) 
 		})
 	}
 	return data, nil
+}
+
+func (s *SkillService) ImportSkillsFromCSV(c context.Context, data [][]string) error {
+	if len(data) <= 1 {
+		return appErrors.ErrNoCSVDataToImport
+	}
+
+	uniqueNames := utils.NewSet[string]()
+
+	for i, row := range data {
+		if i == 0 {
+			continue
+		}
+		if len(row) < 1 {
+			return fmt.Errorf("row %d: invalid number of columns", i+1)
+		}
+
+		name := strings.TrimSpace(row[0])
+		if name == "" {
+			return fmt.Errorf("row %d: name is required", i+1)
+		}
+
+		if !uniqueNames.Has(name) {
+			uniqueNames.Add(name)
+		}
+	}
+
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		skills := make([]models.Skill, 0, uniqueNames.Size())
+		for _, name := range uniqueNames.ToSlice() {
+			skills = append(skills, models.Skill{
+				Name: name,
+			})
+		}
+
+		if err := s.skillRepository.CreateInBatches(tx, skills, 100); err != nil {
+			if appErrors.IsDuplicatedEntryError(err) {
+				return appErrors.ErrSkillAlreadyExists
+			}
+			return appErrors.ErrInternalServerError
+		}
+
+		activityLogsToInsert := make([]models.ActivityLog, 0, len(skills))
+		for _, skill := range skills {
+			activityLog, err := s.activityLogService.createLogActivityModel(c, types.CreateSkill, skill.ID, skill.Name)
+			if err != nil {
+				return err
+			}
+			activityLogsToInsert = append(activityLogsToInsert, *activityLog)
+		}
+
+		if err := s.activityLogService.createInBatches(tx, activityLogsToInsert, 100); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+
+		return nil
+	})
 }
