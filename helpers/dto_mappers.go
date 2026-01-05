@@ -173,6 +173,30 @@ func MapTeamMembersToTeamMemberSummaries(members []models.TeamMember) []dtos.Tea
 	return teamMemberSummaries
 }
 
+func MapTeamMemberToTeamMemberHistory(member *models.TeamMember) *dtos.TeamMemberHistory {
+	if member == nil {
+		return nil
+	}
+	return &dtos.TeamMemberHistory{
+		ID:       member.ID,
+		UserID:   member.User.ID,
+		UserName: member.User.Name,
+		JoinedAt: member.JoinedAt,
+		LeftAt:   member.LeftAt,
+	}
+}
+
+func MapTeamMembersToTeamMemberHistories(members []models.TeamMember) []dtos.TeamMemberHistory {
+	histories := make([]dtos.TeamMemberHistory, 0, len(members))
+	for _, member := range members {
+		teamMemberHistory := MapTeamMemberToTeamMemberHistory(&member)
+		if teamMemberHistory != nil {
+			histories = append(histories, *teamMemberHistory)
+		}
+	}
+	return histories
+}
+
 func MapPositionToPositionSummary(position *models.Position) *dtos.PositionSummary {
 	if position == nil {
 		return nil
@@ -221,9 +245,10 @@ func MapUserToUserDataForSearch(user *models.User) *dtos.UserDataForSearch {
 		return nil
 	}
 	return &dtos.UserDataForSearch{
-		ID:    user.ID,
-		Name:  user.Name,
-		Email: user.Email,
+		ID:          user.ID,
+		Name:        user.Name,
+		Email:       user.Email,
+		CurrentTeam: MapTeamToTeamSummary(user.CurrentTeam),
 	}
 }
 

@@ -1,0 +1,103 @@
+{{define "pages/admin_team_create.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {{template "partials/admin_head.html" .}}
+    <style>
+      .search-results {
+        position: absolute;
+        z-index: 1000;
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    {{template "partials/admin_navbar.html" .}}
+
+    <div class="container mt-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+          <li class="breadcrumb-item">
+            <a href="/admin/teams">Teams</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Create Team
+          </li>
+        </ol>
+      </nav>
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h3 class="mb-0">Create New Team</h3>
+        </div>
+        <div class="card-body">
+          <form id="createTeamForm">
+            <div class="mb-3">
+              <label for="name" class="form-label">Team Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="name"
+                name="name"
+                required
+                placeholder="e.g. Team Alpha"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="description" class="form-label">Description</label>
+              <textarea
+                class="form-control"
+                id="description"
+                name="description"
+                rows="3"
+                placeholder="Team description..."
+              ></textarea>
+            </div>
+            <div class="mb-3 position-relative">
+              <label for="leaderSearch" class="form-label">Leader</label>
+              <input
+                type="text"
+                class="form-control"
+                id="leaderSearch"
+                placeholder="Search user by name..."
+                autocomplete="off"
+              />
+              <input type="hidden" id="leaderID" name="leader_id" required />
+              <div
+                id="leaderSearchResults"
+                class="list-group search-results shadow-sm"
+              ></div>
+              <div id="selectedLeader" class="mt-2 d-none">
+                <span class="badge bg-info text-dark p-2">
+                  Selected: <span id="selectedLeaderName"></span>
+                  <button
+                    type="button"
+                    class="btn-close btn-close-white ms-2"
+                    id="clearLeader"
+                    aria-label="Clear"
+                  ></button>
+                </span>
+              </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+              <a href="/admin/teams" class="btn btn-secondary">Cancel</a>
+              <button type="button" id="createTeamBtn" class="btn btn-primary">
+                Create Team
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {{template "partials/admin_scripts.html" .}}
+    <script src="/static/js/services/admin_user_service.js"></script>
+    <script src="/static/js/services/admin_team_service.js"></script>
+    <script src="/static/js/admin_team_create.js"></script>
+  </body>
+</html>
+{{end}}

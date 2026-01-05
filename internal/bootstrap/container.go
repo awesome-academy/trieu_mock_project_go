@@ -35,6 +35,7 @@ type AppContainer struct {
 	AdminUserHandler      *handlers.AdminUserHandler
 	AdminPositionHandler  *handlers.AdminPositionHandler
 	AdminSkillHandler     *handlers.AdminSkillHandler
+	AdminTeamHandler      *handlers.AdminTeamHandler
 }
 
 func NewAppContainer() *AppContainer {
@@ -48,8 +49,8 @@ func NewAppContainer() *AppContainer {
 
 	// Initialize services
 	authService := services.NewAuthService(config.DB, userRepo)
-	userService := services.NewUserService(config.DB, userRepo)
-	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo)
+	userService := services.NewUserService(config.DB, userRepo, teamsRepo)
+	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo, userRepo)
 	positionService := services.NewPositionService(config.DB, positionRepo)
 	projectService := services.NewProjectService(config.DB, projectRepo)
 	skillService := services.NewSkillService(config.DB, skillRepo)
@@ -79,5 +80,6 @@ func NewAppContainer() *AppContainer {
 		AdminUserHandler:      handlers.NewAdminUserHandler(userService, teamsService, positionService, skillService),
 		AdminPositionHandler:  handlers.NewAdminPositionHandler(positionService),
 		AdminSkillHandler:     handlers.NewAdminSkillHandler(skillService),
+		AdminTeamHandler:      handlers.NewAdminTeamHandler(teamsService, userService),
 	}
 }

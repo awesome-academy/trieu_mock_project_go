@@ -41,6 +41,7 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 		// Admin user management
 		adminGroup.GET("/users", appContainer.AdminUserHandler.AdminUsersPage)
 		adminGroup.GET("/users/partial/search", appContainer.AdminUserHandler.AdminUsersSearchPartial)
+		adminGroup.GET("/users/search", appContainer.AdminUserHandler.AdminUsersSearchJSON)
 		adminGroup.GET("/users/create", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.AdminUserCreatePage)
 		adminGroup.POST("/users", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.CreateUser)
 		adminGroup.GET("/users/:userId", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.AdminUserDetailPage)
@@ -63,5 +64,16 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 		adminGroup.GET("/skills/:skillId/edit", appContainer.CSRFMiddleware, appContainer.AdminSkillHandler.EditSkillPage)
 		adminGroup.PUT("/skills/:skillId", appContainer.CSRFMiddleware, appContainer.AdminSkillHandler.UpdateSkill)
 		adminGroup.DELETE("/skills/:skillId", appContainer.CSRFMiddleware, appContainer.AdminSkillHandler.DeleteSkill)
+		// Admin team management
+		adminGroup.GET("/teams", appContainer.CSRFMiddleware, appContainer.AdminTeamHandler.ListTeamPage)
+		adminGroup.GET("/teams/partial/search", appContainer.AdminTeamHandler.TeamSearchPartial)
+		adminGroup.GET("/teams/create", appContainer.CSRFMiddleware, appContainer.AdminTeamHandler.CreateTeamPage)
+		adminGroup.POST("/teams", appContainer.CSRFMiddleware, appContainer.AdminTeamHandler.CreateTeam)
+		adminGroup.GET("/teams/:teamId/edit", appContainer.CSRFMiddleware, appContainer.AdminTeamHandler.EditTeamPage)
+		adminGroup.GET("/teams/:teamId/history/partial", appContainer.AdminTeamHandler.TeamMemberHistoryPartial)
+		adminGroup.PUT("/teams/:teamId", appContainer.CSRFMiddleware, appContainer.AdminTeamHandler.UpdateTeam)
+		adminGroup.DELETE("/teams/:teamId", appContainer.CSRFMiddleware, appContainer.AdminTeamHandler.DeleteTeam)
+		adminGroup.POST("/teams/:teamId/members", appContainer.CSRFMiddleware, appContainer.AdminTeamHandler.AddMember)
+		adminGroup.DELETE("/teams/:teamId/members/:userId", appContainer.CSRFMiddleware, appContainer.AdminTeamHandler.RemoveMember)
 	}
 }

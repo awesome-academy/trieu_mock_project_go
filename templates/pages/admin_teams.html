@@ -1,0 +1,44 @@
+{{define "pages/admin_teams.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {{template "partials/admin_head.html" .}}
+  </head>
+  <body>
+    {{template "partials/admin_navbar.html" .}}
+
+    <div class="container mt-4">
+      <div class="row mb-4 align-items-center">
+        <div class="col">
+          <h1>Team Management</h1>
+        </div>
+        <div class="col-auto">
+          <a href="/admin/teams/create" class="btn btn-success">
+            <i class="bi bi-plus-circle me-1"></i>Create Team
+          </a>
+        </div>
+      </div>
+
+      <div id="teamListContainer" style="min-height: 400px">
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <template id="loadingTemplate">
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    </template>
+
+    {{template "partials/admin_scripts.html" .}}
+    <script src="/static/js/services/admin_team_service.js"></script>
+    <script src="/static/js/admin_teams.js"></script>
+  </body>
+</html>
+{{end}}
