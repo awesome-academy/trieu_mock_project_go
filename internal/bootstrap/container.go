@@ -15,14 +15,16 @@ type AppContainer struct {
 	AdminAuthMiddleware gin.HandlerFunc
 	JWTAuthMiddleware   gin.HandlerFunc
 	CSRFMiddleware      gin.HandlerFunc
+	DataLoader          *middlewares.DataLoader
 
 	// Services
-	AuthService     *services.AuthService
-	UserService     *services.UserService
-	TeamsService    *services.TeamsService
-	PositionService *services.PositionService
-	ProjectService  *services.ProjectService
-	SkillService    *services.SkillService
+	ValidationService *services.ValidationService
+	AuthService       *services.AuthService
+	UserService       *services.UserService
+	TeamsService      *services.TeamsService
+	PositionService   *services.PositionService
+	ProjectService    *services.ProjectService
+	SkillService      *services.SkillService
 
 	// Handlers
 	AuthHandler        *handlers.AuthHandler
@@ -36,6 +38,7 @@ type AppContainer struct {
 	AdminPositionHandler  *handlers.AdminPositionHandler
 	AdminSkillHandler     *handlers.AdminSkillHandler
 	AdminTeamHandler      *handlers.AdminTeamHandler
+	AdminProjectHandler   *handlers.AdminProjectHandler
 }
 
 func NewAppContainer() *AppContainer {
@@ -45,14 +48,16 @@ func NewAppContainer() *AppContainer {
 	teamMemberRepo := repositories.NewTeamMemberRepository()
 	positionRepo := repositories.NewPositionRepository()
 	projectRepo := repositories.NewProjectRepository()
+	projectMemberRepo := repositories.NewProjectMemberRepository()
 	skillRepo := repositories.NewSkillRepository()
 
 	// Initialize services
+	validationService := services.NewValidationService(config.DB, teamMemberRepo)
 	authService := services.NewAuthService(config.DB, userRepo)
-	userService := services.NewUserService(config.DB, userRepo, teamsRepo)
-	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo, userRepo)
+	userService := services.NewUserService(config.DB, userRepo, teamsRepo, projectRepo, projectMemberRepo, teamMemberRepo)
+	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo, userRepo, projectRepo, projectMemberRepo)
 	positionService := services.NewPositionService(config.DB, positionRepo)
-	projectService := services.NewProjectService(config.DB, projectRepo)
+	projectService := services.NewProjectService(config.DB, projectRepo, validationService)
 	skillService := services.NewSkillService(config.DB, skillRepo)
 
 	return &AppContainer{
@@ -60,14 +65,16 @@ func NewAppContainer() *AppContainer {
 		JWTAuthMiddleware:   middlewares.JWTAuthMiddleware(),
 		AdminAuthMiddleware: middlewares.AdminAuthMiddleware(),
 		CSRFMiddleware:      middlewares.CSRFMiddleware(),
+		DataLoader:          middlewares.NewDataLoader(teamsService, positionService, skillService),
 
 		// Services
-		AuthService:     authService,
-		UserService:     userService,
-		TeamsService:    teamsService,
-		PositionService: positionService,
-		ProjectService:  projectService,
-		SkillService:    skillService,
+		ValidationService: validationService,
+		AuthService:       authService,
+		UserService:       userService,
+		TeamsService:      teamsService,
+		PositionService:   positionService,
+		ProjectService:    projectService,
+		SkillService:      skillService,
 
 		// Handlers
 		AuthHandler:        handlers.NewAuthHandler(authService),
@@ -81,5 +88,6 @@ func NewAppContainer() *AppContainer {
 		AdminPositionHandler:  handlers.NewAdminPositionHandler(positionService),
 		AdminSkillHandler:     handlers.NewAdminSkillHandler(skillService),
 		AdminTeamHandler:      handlers.NewAdminTeamHandler(teamsService, userService),
+		AdminProjectHandler:   handlers.NewAdminProjectHandler(projectService, teamsService, userService),
 	}
 }

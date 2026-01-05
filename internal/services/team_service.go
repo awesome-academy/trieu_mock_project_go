@@ -13,14 +13,28 @@ import (
 )
 
 type TeamsService struct {
-	db                   *gorm.DB
-	teamRepository       *repositories.TeamsRepository
-	teamMemberRepository *repositories.TeamMemberRepository
-	userRepository       *repositories.UserRepository
+	db                      *gorm.DB
+	teamRepository          *repositories.TeamsRepository
+	teamMemberRepository    *repositories.TeamMemberRepository
+	userRepository          *repositories.UserRepository
+	projectRepository       *repositories.ProjectRepository
+	projectMemberRepository *repositories.ProjectMemberRepository
 }
 
-func NewTeamsService(db *gorm.DB, teamRepository *repositories.TeamsRepository, teamMemberRepository *repositories.TeamMemberRepository, userRepository *repositories.UserRepository) *TeamsService {
-	return &TeamsService{db: db, teamRepository: teamRepository, teamMemberRepository: teamMemberRepository, userRepository: userRepository}
+func NewTeamsService(db *gorm.DB,
+	teamRepository *repositories.TeamsRepository,
+	teamMemberRepository *repositories.TeamMemberRepository,
+	userRepository *repositories.UserRepository,
+	projectRepository *repositories.ProjectRepository,
+	projectMemberRepository *repositories.ProjectMemberRepository) *TeamsService {
+	return &TeamsService{
+		db:                      db,
+		teamRepository:          teamRepository,
+		teamMemberRepository:    teamMemberRepository,
+		userRepository:          userRepository,
+		projectRepository:       projectRepository,
+		projectMemberRepository: projectMemberRepository,
+	}
 }
 
 func (s *TeamsService) ListTeams(c context.Context, limit, offset int) (*dtos.ListTeamsResponse, error) {
@@ -78,6 +92,15 @@ func (s *TeamsService) GetTeamMembers(c context.Context, teamID uint, limit, off
 	}
 
 	return response, nil
+}
+
+func (s *TeamsService) GetAllTeamMembers(c context.Context, teamID uint) ([]dtos.TeamMemberSummary, error) {
+	members, err := s.teamMemberRepository.FindAllActiveMembersByTeamID(s.db.WithContext(c), teamID)
+	if err != nil {
+		return nil, appErrors.ErrInternalServerError
+	}
+
+	return helpers.MapTeamMembersToTeamMemberSummaries(members), nil
 }
 
 func (s *TeamsService) GetTeamMemberHistory(c context.Context, teamID uint, limit, offset int) (*dtos.ListTeamMemberHistoryResponse, error) {
@@ -275,6 +298,16 @@ func (s *TeamsService) AddMemberToTeam(c context.Context, teamID uint, userID ui
 			if activeTeam.LeaderID == userID {
 				return appErrors.ErrCannotRemoveOrMoveTeamLeader
 			}
+
+			// Check if user is member of any project in current team
+			isProjectMember, err := s.projectMemberRepository.ExistsByMemberIDAndTeamID(tx, userID, activeTeamMember.TeamID)
+			if err != nil {
+				return appErrors.ErrInternalServerError
+			}
+			if isProjectMember {
+				return appErrors.ErrCannotRemoveOrMoveProjectMember
+			}
+
 			activeTeamMember.LeftAt = &now
 			if err := s.teamMemberRepository.Update(tx, activeTeamMember); err != nil {
 				return appErrors.ErrInternalServerError
@@ -327,6 +360,16 @@ func (s *TeamsService) RemoveMemberFromTeam(c context.Context, teamID uint, user
 	if teamMember == nil || teamMember.TeamID != teamID {
 		return appErrors.ErrUserNotInTeam
 	}
+
+	// Check if user is member of any project in this team
+	isProjectMember, err := s.projectMemberRepository.ExistsByMemberIDAndTeamID(s.db.WithContext(c), userID, teamID)
+	if err != nil {
+		return appErrors.ErrInternalServerError
+	}
+	if isProjectMember {
+		return appErrors.ErrCannotRemoveOrMoveProjectMember
+	}
+
 	now := time.Now()
 	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
 		// Set left_at for team member record

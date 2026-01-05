@@ -32,6 +32,9 @@ func main() {
 
 	setupSessionConfiguration(router, cfg)
 
+	// Register custom validations
+	bootstrap.RegisterCustomValidations()
+
 	// Initialize app container
 	appContainer := bootstrap.NewAppContainer()
 
