@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/go-sql-driver/mysql"
+	csrf "github.com/utrack/gin-csrf"
 )
 
 type AppError struct {
@@ -96,6 +97,18 @@ func RespondPageError(
 ) {
 	c.HTML(status, templateName, gin.H{
 		"error": message,
+	})
+}
+
+func RespondPageErrorWithCSRF(
+	c *gin.Context,
+	status int,
+	templateName string,
+	message string,
+) {
+	c.HTML(status, templateName, gin.H{
+		"error":     message,
+		"csrfToken": csrf.GetToken(c),
 	})
 }
 

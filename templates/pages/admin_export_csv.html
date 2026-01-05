@@ -1,0 +1,91 @@
+{{define "pages/admin_export_csv.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {{template "partials/admin_head.html" .}}
+    <style>
+      .export-card {
+        border-radius: 15px;
+        border: none;
+      }
+      .export-header {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        border-radius: 15px 15px 0 0;
+        padding: 2rem;
+      }
+    </style>
+  </head>
+  <body>
+    {{template "partials/admin_navbar.html" .}}
+
+    <div class="container mt-5">
+      <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+          <div class="card shadow-sm export-card">
+            <div class="export-header">
+              <h3 class="fw-bold mb-0">
+                <i class="bi bi-file-earmark-spreadsheet me-2"></i>Export Data
+              </h3>
+              <p class="mb-0 opacity-75">
+                Select the type of data you want to export as CSV
+              </p>
+            </div>
+            <div class="card-body p-4">
+              {{ if .error }}
+              <div
+                class="alert alert-danger alert-dismissible fade show"
+                role="alert"
+              >
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                {{ .error }}
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="alert"
+                  aria-label="Close"
+                ></button>
+              </div>
+              {{ end }}
+              <form id="exportForm" action="/admin/export/csv" method="POST">
+                <input type="hidden" name="_csrf" value="{{.csrfToken}}" />
+                <div class="mb-4">
+                  <label for="exportType" class="form-label fw-bold"
+                    >Data Type</label
+                  >
+                  <select
+                    class="form-select form-select-lg"
+                    id="exportType"
+                    name="type"
+                    required
+                  >
+                    <option value="" selected disabled>
+                      Choose data type...
+                    </option>
+                    <option value="user">Users (with Skills)</option>
+                    <option value="position">Positions</option>
+                    <option value="project">Projects (with Members)</option>
+                    <option value="skill">Skills</option>
+                    <option value="team">Teams</option>
+                  </select>
+                </div>
+                <div class="d-grid">
+                  <button
+                    type="submit"
+                    class="btn btn-primary btn-lg rounded-pill"
+                  >
+                    <i class="bi bi-download me-2"></i>Export CSV
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {{template "partials/admin_scripts.html" .}}
+    <script src="/static/js/admin_export_csv.js"></script>
+  </body>
+</html>
+{{end}}

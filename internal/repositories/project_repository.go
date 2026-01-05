@@ -24,6 +24,15 @@ func (r *ProjectRepository) FindAllProjectSummary(db *gorm.DB) ([]models.Project
 	return projects, nil
 }
 
+func (r *ProjectRepository) FindAllProjectsWithMembers(db *gorm.DB) ([]models.Project, error) {
+	var projects []models.Project
+	result := db.Preload("Leader").Preload("Team").Preload("Members").Find(&projects)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return projects, nil
+}
+
 func (r *ProjectRepository) SearchProjects(db *gorm.DB, teamID *uint, limit, offset int) ([]models.Project, int64, error) {
 	var projects []models.Project
 	query := db.Model(&models.Project{})

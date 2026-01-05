@@ -77,6 +77,15 @@ func (r *UserRepository) FindAllUsersSummary(db *gorm.DB) ([]models.User, error)
 	return users, nil
 }
 
+func (r *UserRepository) FindAllUsersWithSkills(db *gorm.DB) ([]models.User, error) {
+	var users []models.User
+	result := db.Preload("UserSkill.Skill").Preload("Position").Preload("CurrentTeam").Find(&users)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return users, nil
+}
+
 func (r *UserRepository) CreateUser(db *gorm.DB, user *models.User) error {
 	if err := db.Create(user).Error; err != nil {
 		return err
