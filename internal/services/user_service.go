@@ -206,7 +206,7 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 
 			if activeMember != nil {
 				// Check if user is leader of their current team
-				isLeader, err := s.teamRepository.ExistByLeaderId(tx, id)
+				isLeader, err := s.teamRepository.ExistByLeaderID(tx, id)
 				if err != nil {
 					return appErrors.ErrInternalServerError
 				}
@@ -276,7 +276,7 @@ func (s *UserService) DeleteUser(c context.Context, id uint) error {
 		return appErrors.ErrInternalServerError
 	}
 
-	exist, err := s.teamRepository.ExistByLeaderId(s.db.WithContext(c), id)
+	exist, err := s.teamRepository.ExistByLeaderID(s.db.WithContext(c), id)
 	if err != nil {
 		return appErrors.ErrInternalServerError
 	}

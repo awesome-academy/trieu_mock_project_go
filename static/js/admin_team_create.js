@@ -90,9 +90,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const formData = new FormData(createTeamForm);
+    const rawDescription = formData.get("description");
+    const description = rawDescription === "" ? null : rawDescription;
     const data = {
       name: formData.get("name"),
-      description: formData.get("description"),
+      description: description,
       leader_id: parseInt(formData.get("leader_id")),
     };
 
