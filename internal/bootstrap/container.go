@@ -15,6 +15,7 @@ type AppContainer struct {
 	AdminAuthMiddleware gin.HandlerFunc
 	JWTAuthMiddleware   gin.HandlerFunc
 	CSRFMiddleware      gin.HandlerFunc
+	DataLoader          *middlewares.DataLoader
 
 	// Services
 	ValidationService *services.ValidationService
@@ -67,6 +68,7 @@ func NewAppContainer() *AppContainer {
 		JWTAuthMiddleware:   middlewares.JWTAuthMiddleware(),
 		AdminAuthMiddleware: middlewares.AdminAuthMiddleware(),
 		CSRFMiddleware:      middlewares.CSRFMiddleware(),
+		DataLoader:          middlewares.NewDataLoader(teamsService, positionService, skillService),
 
 		// Services
 		ValidationService: validationService,

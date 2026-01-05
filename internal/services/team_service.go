@@ -319,7 +319,7 @@ func (s *TeamsService) AddMemberToTeam(c context.Context, teamID uint, userID ui
 			}
 
 			// Check if user is member of any project in current team
-			isProjectMember, err := s.projectMemberRepository.ExistByMemberIdAndTeamId(tx, userID, activeTeamMember.TeamID)
+			isProjectMember, err := s.projectMemberRepository.ExistsByMemberIDAndTeamID(tx, userID, activeTeamMember.TeamID)
 			if err != nil {
 				return appErrors.ErrInternalServerError
 			}
@@ -389,7 +389,7 @@ func (s *TeamsService) RemoveMemberFromTeam(c context.Context, teamID uint, user
 	}
 
 	// Check if user is member of any project in this team
-	isProjectMember, err := s.projectMemberRepository.ExistByMemberIdAndTeamId(s.db.WithContext(c), userID, teamID)
+	isProjectMember, err := s.projectMemberRepository.ExistsByMemberIDAndTeamID(s.db.WithContext(c), userID, teamID)
 	if err != nil {
 		return appErrors.ErrInternalServerError
 	}

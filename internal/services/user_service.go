@@ -206,7 +206,7 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 
 			if activeMember != nil {
 				// Check if user is leader of their current team
-				isLeader, err := s.teamRepository.ExistByLeaderID(tx, id)
+				isLeader, err := s.teamRepository.ExistsByLeaderID(tx, id)
 				if err != nil {
 					return appErrors.ErrInternalServerError
 				}
@@ -215,7 +215,7 @@ func (s *UserService) UpdateUser(c context.Context, id uint, req dtos.CreateOrUp
 				}
 
 				// Check if user is member of any project in their current team
-				isProjectMember, err := s.projectMemberRepository.ExistByMemberIdAndTeamId(tx, id, activeMember.TeamID)
+				isProjectMember, err := s.projectMemberRepository.ExistsByMemberIDAndTeamID(tx, id, activeMember.TeamID)
 				if err != nil {
 					return appErrors.ErrInternalServerError
 				}
@@ -276,7 +276,7 @@ func (s *UserService) DeleteUser(c context.Context, id uint) error {
 		return appErrors.ErrInternalServerError
 	}
 
-	exist, err := s.teamRepository.ExistByLeaderID(s.db.WithContext(c), id)
+	exist, err := s.teamRepository.ExistsByLeaderID(s.db.WithContext(c), id)
 	if err != nil {
 		return appErrors.ErrInternalServerError
 	}
@@ -284,7 +284,7 @@ func (s *UserService) DeleteUser(c context.Context, id uint) error {
 		return appErrors.ErrCannotDeleteUserBeingTeamLeader
 	}
 
-	exist, err = s.projectRepository.ExistByLeaderId(s.db.WithContext(c), id)
+	exist, err = s.projectRepository.ExistsByLeaderID(s.db.WithContext(c), id)
 	if err != nil {
 		return appErrors.ErrInternalServerError
 	}
@@ -292,7 +292,7 @@ func (s *UserService) DeleteUser(c context.Context, id uint) error {
 		return appErrors.ErrCannotDeleteUserBeingProjectLeader
 	}
 
-	exist, err = s.projectMemberRepository.ExistByMemberId(s.db.WithContext(c), id)
+	exist, err = s.projectMemberRepository.ExistsByMemberID(s.db.WithContext(c), id)
 	if err != nil {
 		return appErrors.ErrInternalServerError
 	}

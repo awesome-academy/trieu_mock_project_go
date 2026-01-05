@@ -30,10 +30,9 @@ func NewAdminProjectHandler(
 }
 
 func (h *AdminProjectHandler) ListProjectPage(c *gin.Context) {
-	teams := h.teamService.GetAllTeamsSummary(c.Request.Context())
 	c.HTML(http.StatusOK, "pages/admin_projects.html", gin.H{
 		"title":     "Admin Projects Management",
-		"teams":     teams,
+		"teams":     c.MustGet("teams"),
 		"csrfToken": csrf.GetToken(c),
 	})
 }
@@ -59,10 +58,9 @@ func (h *AdminProjectHandler) ProjectSearchPartial(c *gin.Context) {
 }
 
 func (h *AdminProjectHandler) CreateProjectPage(c *gin.Context) {
-	teams := h.teamService.GetAllTeamsSummary(c.Request.Context())
 	c.HTML(http.StatusOK, "pages/admin_project_create.html", gin.H{
 		"title":     "Create Project",
-		"teams":     teams,
+		"teams":     c.MustGet("teams"),
 		"csrfToken": csrf.GetToken(c),
 	})
 }
@@ -96,12 +94,10 @@ func (h *AdminProjectHandler) EditProjectPage(c *gin.Context) {
 		return
 	}
 
-	teams := h.teamService.GetAllTeamsSummary(c.Request.Context())
-
 	c.HTML(http.StatusOK, templateName, gin.H{
 		"title":     "Edit Project",
 		"project":   project,
-		"teams":     teams,
+		"teams":     c.MustGet("teams"),
 		"csrfToken": csrf.GetToken(c),
 	})
 }

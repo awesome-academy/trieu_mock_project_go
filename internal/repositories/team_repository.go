@@ -79,7 +79,7 @@ func (r *TeamsRepository) Delete(db *gorm.DB, id uint) error {
 	return db.Delete(&models.Team{}, id).Error
 }
 
-func (r *TeamsRepository) ExistByLeaderID(db *gorm.DB, leaderID uint) (bool, error) {
+func (r *TeamsRepository) ExistsByLeaderID(db *gorm.DB, leaderID uint) (bool, error) {
 	var count int64
 	result := db.Model(&models.Team{}).
 		Where("leader_id = ?", leaderID).
