@@ -39,13 +39,13 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 		// Admin dashboard
 		adminGroup.GET("/", appContainer.AdminDashboardHandler.AdminDashboardPage)
 		// Admin user management
-		adminGroup.GET("/users", appContainer.AdminUserHandler.AdminUsersPage)
+		adminGroup.GET("/users", appContainer.DataLoader.LoadTeams(), appContainer.AdminUserHandler.AdminUsersPage)
 		adminGroup.GET("/users/partial/search", appContainer.AdminUserHandler.AdminUsersSearchPartial)
 		adminGroup.GET("/users/search", appContainer.AdminUserHandler.AdminUsersSearchJSON)
-		adminGroup.GET("/users/create", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.AdminUserCreatePage)
+		adminGroup.GET("/users/create", appContainer.CSRFMiddleware, appContainer.DataLoader.LoadTeamPositionSkill(), appContainer.AdminUserHandler.AdminUserCreatePage)
 		adminGroup.POST("/users", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.CreateUser)
 		adminGroup.GET("/users/:userId", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.AdminUserDetailPage)
-		adminGroup.GET("/users/:userId/edit", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.AdminUserEditPage)
+		adminGroup.GET("/users/:userId/edit", appContainer.CSRFMiddleware, appContainer.DataLoader.LoadTeamPositionSkill(), appContainer.AdminUserHandler.AdminUserEditPage)
 		adminGroup.PUT("/users/:userId", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.UpdateUser)
 		adminGroup.DELETE("/users/:userId", appContainer.CSRFMiddleware, appContainer.AdminUserHandler.DeleteUser)
 		// Admin position management
@@ -77,11 +77,11 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 		adminGroup.DELETE("/teams/:teamId/members/:userId", appContainer.CSRFMiddleware, appContainer.AdminTeamHandler.RemoveMember)
 		adminGroup.GET("/teams/:teamId/members/all", appContainer.AdminTeamHandler.GetTeamMembersAll)
 		// Admin project management
-		adminGroup.GET("/projects", appContainer.CSRFMiddleware, appContainer.AdminProjectHandler.ListProjectPage)
+		adminGroup.GET("/projects", appContainer.CSRFMiddleware, appContainer.DataLoader.LoadTeams(), appContainer.AdminProjectHandler.ListProjectPage)
 		adminGroup.GET("/projects/partial/search", appContainer.AdminProjectHandler.ProjectSearchPartial)
-		adminGroup.GET("/projects/create", appContainer.CSRFMiddleware, appContainer.AdminProjectHandler.CreateProjectPage)
+		adminGroup.GET("/projects/create", appContainer.CSRFMiddleware, appContainer.DataLoader.LoadTeams(), appContainer.AdminProjectHandler.CreateProjectPage)
 		adminGroup.POST("/projects", appContainer.CSRFMiddleware, appContainer.AdminProjectHandler.CreateProject)
-		adminGroup.GET("/projects/:projectId/edit", appContainer.CSRFMiddleware, appContainer.AdminProjectHandler.EditProjectPage)
+		adminGroup.GET("/projects/:projectId/edit", appContainer.CSRFMiddleware, appContainer.DataLoader.LoadTeams(), appContainer.AdminProjectHandler.EditProjectPage)
 		adminGroup.PUT("/projects/:projectId", appContainer.CSRFMiddleware, appContainer.AdminProjectHandler.UpdateProject)
 		adminGroup.DELETE("/projects/:projectId", appContainer.CSRFMiddleware, appContainer.AdminProjectHandler.DeleteProject)
 	}
