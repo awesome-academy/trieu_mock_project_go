@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS `user_skills` (
 -- Create projects table
 CREATE TABLE IF NOT EXISTS `projects` (
   `id` int unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `name` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL UNIQUE KEY,
   `abbreviation` varchar(50) NOT NULL,
   `start_date` date NULL,
   `end_date` date NULL,
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS `activity_logs` (
   `user_id` int unsigned NOT NULL,
   `description` text NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT `fk_activity_logs_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_activity_logs_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   KEY `idx_activity_logs_user_id` (`user_id`),
   KEY `idx_activity_logs_created_at` (`created_at`)
 );

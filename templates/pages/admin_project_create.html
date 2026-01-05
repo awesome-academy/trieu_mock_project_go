@@ -1,0 +1,219 @@
+{{define "pages/admin_project_create.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {{template "partials/admin_head.html" .}}
+    <link rel="stylesheet" href="/static/css/admin_projects.css" />
+  </head>
+  <body>
+    {{template "partials/admin_navbar.html" .}}
+
+    <div class="container mt-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+          <li class="breadcrumb-item">
+            <a href="/admin/projects">Projects</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Create Project
+          </li>
+        </ol>
+      </nav>
+
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+              <h5 class="mb-0 fw-bold">
+                <i class="bi bi-plus-circle me-2 text-success"></i>Create New
+                Project
+              </h5>
+            </div>
+            <div class="card-body p-4">
+              <form id="createProjectForm">
+                <div class="row mb-3">
+                  <div class="col-md-8">
+                    <label for="name" class="form-label fw-bold"
+                      >Project Name <span class="text-danger">*</span></label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="name"
+                      name="name"
+                      required
+                      placeholder="Enter project name"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <label for="abbreviation" class="form-label fw-bold"
+                      >Abbreviation <span class="text-danger">*</span></label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="abbreviation"
+                      name="abbreviation"
+                      required
+                      placeholder="e.g. PRJ01"
+                    />
+                  </div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label for="startDate" class="form-label fw-bold"
+                      >Start Date</label
+                    >
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="startDate"
+                      name="start_date"
+                    />
+                  </div>
+                  <div class="col-md-6">
+                    <label for="endDate" class="form-label fw-bold"
+                      >End Date</label
+                    >
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="endDate"
+                      name="end_date"
+                    />
+                  </div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label for="team" class="form-label fw-bold"
+                      >Team <span class="text-danger">*</span></label
+                    >
+                    <select
+                      class="form-select"
+                      id="team"
+                      name="team_id"
+                      required
+                    >
+                      <option value="" selected disabled>
+                        -- Select Team --
+                      </option>
+                      {{range .teams}}
+                      <option value="{{.ID}}">{{.Name}}</option>
+                      {{end}}
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="leaderSearch" class="form-label fw-bold"
+                      >Project Leader <span class="text-danger">*</span></label
+                    >
+                    <div class="position-relative">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="leaderSearch"
+                        placeholder="Search leader by name..."
+                        autocomplete="off"
+                      />
+                      <input
+                        type="hidden"
+                        id="leaderID"
+                        name="leader_id"
+                        required
+                      />
+                      <div
+                        id="leaderSearchResults"
+                        class="list-group search-results shadow-sm"
+                      ></div>
+                    </div>
+                    <div id="selectedLeader" class="mt-2 d-none">
+                      <span class="badge bg-info text-dark p-2">
+                        Selected: <span id="selectedLeaderName"></span>
+                        <button
+                          type="button"
+                          class="btn-close ms-2"
+                          id="clearLeader"
+                          aria-label="Clear"
+                        ></button>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mb-4">
+                  <label class="form-label fw-bold">Project Members</label>
+                  <div
+                    id="memberSelectionContainer"
+                    class="p-3 border rounded bg-light"
+                  >
+                    <p class="text-muted mb-0" id="memberPlaceholder">
+                      Please select a team first to add members.
+                    </p>
+                    <div id="memberList" class="d-none">
+                      <div class="dropdown mb-3">
+                        <button
+                          class="btn btn-outline-secondary dropdown-toggle w-100 text-start bg-white"
+                          type="button"
+                          id="memberDropdown"
+                          data-bs-toggle="dropdown"
+                          data-bs-auto-close="outside"
+                          aria-expanded="false"
+                        >
+                          Select Members...
+                        </button>
+                        <div
+                          class="dropdown-menu w-100 p-2 shadow-sm"
+                          aria-labelledby="memberDropdown"
+                          id="memberCheckboxList"
+                          style="max-height: 300px; overflow-y: auto"
+                        >
+                          <!-- Checkboxes will be loaded here -->
+                        </div>
+                      </div>
+
+                      <h6 class="fw-bold mb-2">Selected Members:</h6>
+                      <div
+                        id="selectedMembersContainer"
+                        class="list-group border rounded bg-white"
+                        style="min-height: 50px"
+                      >
+                        <div
+                          class="list-group-item text-muted small"
+                          id="noMembersSelected"
+                        >
+                          No members selected yet.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="d-flex justify-content-between align-items-center border-top pt-4"
+                >
+                  <a href="/admin/projects" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                  </a>
+                  <button
+                    type="submit"
+                    class="btn btn-success px-5 fw-bold"
+                    id="createProjectBtn"
+                  >
+                    <i class="bi bi-check-circle me-1"></i>Create Project
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {{template "partials/admin_scripts.html" .}}
+    <script src="/static/js/services/admin_project_service.js"></script>
+    <script src="/static/js/admin_project_create.js"></script>
+  </body>
+</html>
+{{end}}

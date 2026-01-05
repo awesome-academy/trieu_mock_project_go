@@ -33,7 +33,7 @@ func (h *AuthHandler) UserLogin(c *gin.Context) {
 	}
 
 	// Login user
-	user, err := h.authService.Login(c.Request.Context(), req.User.Email, req.User.Password)
+	user, err := h.authService.Login(c.Request.Context(), req.User.Email, req.User.Password, false)
 	if err != nil {
 		appErrors.RespondError(c, http.StatusUnauthorized, "Invalid email or password")
 		return

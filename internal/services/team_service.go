@@ -7,20 +7,38 @@ import (
 	"trieu_mock_project_go/internal/dtos"
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/repositories"
+	"trieu_mock_project_go/internal/types"
 	"trieu_mock_project_go/models"
 
 	"gorm.io/gorm"
 )
 
 type TeamsService struct {
-	db                   *gorm.DB
-	teamRepository       *repositories.TeamsRepository
-	teamMemberRepository *repositories.TeamMemberRepository
-	userRepository       *repositories.UserRepository
+	db                      *gorm.DB
+	teamRepository          *repositories.TeamsRepository
+	teamMemberRepository    *repositories.TeamMemberRepository
+	userRepository          *repositories.UserRepository
+	projectRepository       *repositories.ProjectRepository
+	projectMemberRepository *repositories.ProjectMemberRepository
+	activityLogService      *ActivityLogService
 }
 
-func NewTeamsService(db *gorm.DB, teamRepository *repositories.TeamsRepository, teamMemberRepository *repositories.TeamMemberRepository, userRepository *repositories.UserRepository) *TeamsService {
-	return &TeamsService{db: db, teamRepository: teamRepository, teamMemberRepository: teamMemberRepository, userRepository: userRepository}
+func NewTeamsService(db *gorm.DB,
+	teamRepository *repositories.TeamsRepository,
+	teamMemberRepository *repositories.TeamMemberRepository,
+	userRepository *repositories.UserRepository,
+	projectRepository *repositories.ProjectRepository,
+	projectMemberRepository *repositories.ProjectMemberRepository,
+	activityLogService *ActivityLogService) *TeamsService {
+	return &TeamsService{
+		db:                      db,
+		teamRepository:          teamRepository,
+		teamMemberRepository:    teamMemberRepository,
+		userRepository:          userRepository,
+		projectRepository:       projectRepository,
+		projectMemberRepository: projectMemberRepository,
+		activityLogService:      activityLogService,
+	}
 }
 
 func (s *TeamsService) ListTeams(c context.Context, limit, offset int) (*dtos.ListTeamsResponse, error) {
@@ -78,6 +96,15 @@ func (s *TeamsService) GetTeamMembers(c context.Context, teamID uint, limit, off
 	}
 
 	return response, nil
+}
+
+func (s *TeamsService) GetAllTeamMembers(c context.Context, teamID uint) ([]dtos.TeamMemberSummary, error) {
+	members, err := s.teamMemberRepository.FindAllActiveMembersByTeamID(s.db.WithContext(c), teamID)
+	if err != nil {
+		return nil, appErrors.ErrInternalServerError
+	}
+
+	return helpers.MapTeamMembersToTeamMemberSummaries(members), nil
 }
 
 func (s *TeamsService) GetTeamMemberHistory(c context.Context, teamID uint, limit, offset int) (*dtos.ListTeamMemberHistoryResponse, error) {
@@ -147,6 +174,14 @@ func (s *TeamsService) CreateTeam(c context.Context, req dtos.CreateOrUpdateTeam
 			}
 			return appErrors.ErrInternalServerError
 		}
+
+		if err := s.activityLogService.LogActivityDb(c, tx, types.JoinTeam, leader.ID, leader.Email, team.ID); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+
+		if err := s.activityLogService.LogActivityDb(c, tx, types.CreateTeam, team.ID, team.Name); err != nil {
+			return appErrors.ErrInternalServerError
+		}
 		return nil
 	})
 }
@@ -163,9 +198,9 @@ func (s *TeamsService) UpdateTeam(c context.Context, id uint, req dtos.CreateOrU
 	team.Name = req.Name
 	team.Description = req.Description
 
-	if team.LeaderID != req.LeaderID {
-		team.LeaderID = req.LeaderID
-		return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		if team.LeaderID != req.LeaderID {
+			team.LeaderID = req.LeaderID
 			if err := s.teamRepository.Update(tx, team); err != nil {
 				if appErrors.IsDuplicatedEntryError(err) {
 					return appErrors.ErrTeamAlreadyExists
@@ -191,56 +226,63 @@ func (s *TeamsService) UpdateTeam(c context.Context, id uint, req dtos.CreateOrU
 				return appErrors.ErrInternalServerError
 			}
 			if activeTeamMember != nil {
-				if activeTeamMember.TeamID == team.ID {
-					// New leader is already an active member of the team
-					return nil
-				} else {
+				if activeTeamMember.TeamID != team.ID {
 					return appErrors.ErrTeamLeaderAlreadyInAnotherTeam
 				}
-			}
+			} else {
+				// Add new leader as team member
+				newMember := &models.TeamMember{
+					UserID:   req.LeaderID,
+					TeamID:   team.ID,
+					JoinedAt: time.Now(),
+				}
+				if err := s.teamMemberRepository.Create(tx, newMember); err != nil {
+					return appErrors.ErrInternalServerError
+				}
 
-			// Add new leader as team member
-			newMember := &models.TeamMember{
-				UserID:   req.LeaderID,
-				TeamID:   team.ID,
-				JoinedAt: time.Now(),
+				if err := s.activityLogService.LogActivityDb(c, tx, types.JoinTeam, newLeader.ID, newLeader.Email, team.ID); err != nil {
+					return appErrors.ErrInternalServerError
+				}
 			}
-			if err := s.teamMemberRepository.Create(tx, newMember); err != nil {
+		} else {
+			if err = s.teamRepository.Update(tx, team); err != nil {
+				if appErrors.IsDuplicatedEntryError(err) {
+					return appErrors.ErrTeamAlreadyExists
+				}
 				return appErrors.ErrInternalServerError
 			}
+		}
 
-			return nil
-		})
-	} else {
-		if err = s.teamRepository.Update(s.db.WithContext(c), team); err != nil {
-			if appErrors.IsDuplicatedEntryError(err) {
-				return appErrors.ErrTeamAlreadyExists
-			}
+		if err := s.activityLogService.LogActivityDb(c, tx, types.UpdateTeam, team.ID, team.Name); err != nil {
 			return appErrors.ErrInternalServerError
 		}
 		return nil
-	}
+	})
 }
 
 func (s *TeamsService) DeleteTeam(c context.Context, id uint) error {
-	if _, err := s.teamRepository.FindByID(s.db.WithContext(c), id); err != nil {
+	team_, err := s.teamRepository.FindByID(s.db.WithContext(c), id)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return appErrors.ErrTeamNotFound
 		}
 		return appErrors.ErrInternalServerError
 	}
-	err := s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
 		// Set current_team_id = null for all users in this team
 		if err := s.userRepository.UpdateUsersCurrentTeamToNullByTeamID(tx, id); err != nil {
 			return err
 		}
 
-		return s.teamRepository.Delete(tx, id)
+		if err := s.teamRepository.Delete(tx, id); err != nil {
+			return err
+		}
+
+		if err := s.activityLogService.LogActivityDb(c, tx, types.DeleteTeam, team_.ID, team_.Name); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+		return nil
 	})
-	if err != nil {
-		return appErrors.ErrInternalServerError
-	}
-	return nil
 }
 
 func (s *TeamsService) AddMemberToTeam(c context.Context, teamID uint, userID uint) error {
@@ -275,8 +317,22 @@ func (s *TeamsService) AddMemberToTeam(c context.Context, teamID uint, userID ui
 			if activeTeam.LeaderID == userID {
 				return appErrors.ErrCannotRemoveOrMoveTeamLeader
 			}
+
+			// Check if user is member of any project in current team
+			isProjectMember, err := s.projectMemberRepository.ExistsByMemberIDAndTeamID(tx, userID, activeTeamMember.TeamID)
+			if err != nil {
+				return appErrors.ErrInternalServerError
+			}
+			if isProjectMember {
+				return appErrors.ErrCannotRemoveOrMoveProjectMember
+			}
+
 			activeTeamMember.LeftAt = &now
 			if err := s.teamMemberRepository.Update(tx, activeTeamMember); err != nil {
+				return appErrors.ErrInternalServerError
+			}
+
+			if err := s.activityLogService.LogActivityDb(c, tx, types.LeaveTeam, user.ID, user.Email, activeTeamMember.TeamID); err != nil {
 				return appErrors.ErrInternalServerError
 			}
 		}
@@ -293,6 +349,10 @@ func (s *TeamsService) AddMemberToTeam(c context.Context, teamID uint, userID ui
 		// Update user's current_team_id
 		user.CurrentTeamID = &teamID
 		if err := s.userRepository.UpdateUser(tx, user); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+
+		if err := s.activityLogService.LogActivityDb(c, tx, types.JoinTeam, user.ID, user.Email, teamID); err != nil {
 			return appErrors.ErrInternalServerError
 		}
 		return nil
@@ -327,6 +387,16 @@ func (s *TeamsService) RemoveMemberFromTeam(c context.Context, teamID uint, user
 	if teamMember == nil || teamMember.TeamID != teamID {
 		return appErrors.ErrUserNotInTeam
 	}
+
+	// Check if user is member of any project in this team
+	isProjectMember, err := s.projectMemberRepository.ExistsByMemberIDAndTeamID(s.db.WithContext(c), userID, teamID)
+	if err != nil {
+		return appErrors.ErrInternalServerError
+	}
+	if isProjectMember {
+		return appErrors.ErrCannotRemoveOrMoveProjectMember
+	}
+
 	now := time.Now()
 	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
 		// Set left_at for team member record
@@ -338,6 +408,10 @@ func (s *TeamsService) RemoveMemberFromTeam(c context.Context, teamID uint, user
 		// Set user's current_team_id to null
 		user.CurrentTeamID = nil
 		if err := s.userRepository.UpdateUser(tx, user); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+
+		if err := s.activityLogService.LogActivityDb(c, tx, types.LeaveTeam, user.ID, user.Email, teamID); err != nil {
 			return appErrors.ErrInternalServerError
 		}
 		return nil
