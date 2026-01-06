@@ -38,6 +38,16 @@ func (r *NotificationRepository) FindByUserID(db *gorm.DB, userID uint, limit, o
 	return notifications, total, nil
 }
 
+func (r *NotificationRepository) CountUnreadByUserID(db *gorm.DB, userID uint) (int64, error) {
+	var count int64
+	if err := db.Model(&models.Notification{}).
+		Where("user_id = ? AND is_read = ?", userID, false).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func (r *NotificationRepository) UpdateNotificationAsRead(db *gorm.DB, userID uint, notificationID uint) error {
 	return db.Model(&models.Notification{}).
 		Where("id = ? AND user_id = ?", notificationID, userID).

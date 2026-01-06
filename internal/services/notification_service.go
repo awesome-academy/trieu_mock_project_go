@@ -47,6 +47,14 @@ func (s *NotificationService) GetUserNotifications(c context.Context, userID uin
 	}, nil
 }
 
+func (s *NotificationService) GetUnreadCount(c context.Context, userID uint) (int64, *appErrors.AppError) {
+	count, err := s.notificationRepository.CountUnreadByUserID(s.db.WithContext(c), userID)
+	if err != nil {
+		return 0, appErrors.ErrInternalServerError
+	}
+	return count, nil
+}
+
 func (s *NotificationService) MarkAsRead(c context.Context, userID uint, notificationID uint) *appErrors.AppError {
 	if err := s.notificationRepository.UpdateNotificationAsRead(s.db.WithContext(c), userID, notificationID); err != nil {
 		return appErrors.ErrInternalServerError

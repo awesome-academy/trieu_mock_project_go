@@ -29,6 +29,7 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 
 		// Notifications
 		apiGroup.GET("/notifications", appContainer.NotificationHandler.ListNotifications)
+		apiGroup.GET("/notifications/unread-count", appContainer.NotificationHandler.GetUnreadCount)
 		apiGroup.PUT("/notifications/:id/read", appContainer.NotificationHandler.MarkAsRead)
 		apiGroup.PUT("/notifications/read-all", appContainer.NotificationHandler.MarkAllAsRead)
 		apiGroup.DELETE("/notifications/:id", appContainer.NotificationHandler.DeleteNotification)

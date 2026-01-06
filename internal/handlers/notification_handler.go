@@ -47,6 +47,22 @@ func (h *NotificationHandler) ListNotifications(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+func (h *NotificationHandler) GetUnreadCount(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		appErrors.RespondError(c, http.StatusUnauthorized, "Unauthorized access")
+		return
+	}
+
+	count, err := h.notificationService.GetUnreadCount(c.Request.Context(), userID)
+	if err != nil {
+		appErrors.RespondCustomError(c, err, "Failed to fetch unread count")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"unread_count": count})
+}
+
 func (h *NotificationHandler) MarkAsRead(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
