@@ -3,12 +3,14 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 	"trieu_mock_project_go/helpers"
 	"trieu_mock_project_go/internal/dtos"
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/repositories"
 	"trieu_mock_project_go/internal/types"
+	"trieu_mock_project_go/internal/utils"
 	"trieu_mock_project_go/models"
 
 	"gorm.io/gorm"
@@ -22,6 +24,7 @@ type UserService struct {
 	projectMemberRepository *repositories.ProjectMemberRepository
 	teamMemberRepository    *repositories.TeamMemberRepository
 	activityLogService      *ActivityLogService
+	validationService       *ValidationService
 }
 
 func NewUserService(db *gorm.DB,
@@ -30,7 +33,8 @@ func NewUserService(db *gorm.DB,
 	projectRepository *repositories.ProjectRepository,
 	projectMemberRepository *repositories.ProjectMemberRepository,
 	teamMemberRepository *repositories.TeamMemberRepository,
-	activityLogService *ActivityLogService) *UserService {
+	activityLogService *ActivityLogService,
+	validationService *ValidationService) *UserService {
 	return &UserService{
 		db:                      db,
 		userRepository:          userRepository,
@@ -39,6 +43,7 @@ func NewUserService(db *gorm.DB,
 		projectMemberRepository: projectMemberRepository,
 		teamMemberRepository:    teamMemberRepository,
 		activityLogService:      activityLogService,
+		validationService:       validationService,
 	}
 }
 
@@ -336,7 +341,7 @@ func (s *UserService) ExportUsersToCSV(c context.Context) ([][]string, error) {
 				birthday,
 				fmt.Sprintf("%d", u.Position.ID),
 				u.Position.Name,
-				fmt.Sprintf("%d", u.CurrentTeamID),
+				fmt.Sprintf("%d", *u.CurrentTeamID),
 				teamName,
 				fmt.Sprintf("%d", userSkill.Skill.ID),
 				userSkill.Skill.Name,
@@ -346,4 +351,172 @@ func (s *UserService) ExportUsersToCSV(c context.Context) ([][]string, error) {
 		}
 	}
 	return data, nil
+}
+
+func (s *UserService) ImportUsersFromCSV(c context.Context, data [][]string) error {
+	if len(data) <= 1 {
+		return appErrors.ErrNoCSVDataToImport
+	}
+
+	usersMap := make(map[string]*dtos.UserImportData)
+
+	uniqueEmails := utils.NewSet[string]()
+	uniquePositionIDs := utils.NewSet[uint]()
+	uniqueSkillIDs := utils.NewSet[uint]()
+	uniqueTeamIDs := utils.NewSet[uint]()
+
+	for i, row := range data {
+		if i == 0 {
+			continue
+		}
+		if len(row) < 11 {
+			return appErrors.ErrInvalidCSVFormat
+		}
+
+		rowNumber := i + 1
+
+		name := strings.TrimSpace(row[0])
+		email := strings.TrimSpace(row[1])
+		birthdayStr := strings.TrimSpace(row[2])
+		positionIDStr := strings.TrimSpace(row[3])
+		teamIDStr := strings.TrimSpace(row[5])
+		skillIDStr := strings.TrimSpace(row[7])
+		skillLevelStr := strings.TrimSpace(row[9])
+		skillUsedYearStr := strings.TrimSpace(row[10])
+
+		if email == "" {
+			return fmt.Errorf("row %d: email is required", rowNumber)
+		}
+
+		u, ok := usersMap[email]
+		if !ok {
+			var birthday *time.Time
+			if birthdayStr != "" {
+				t, err := time.Parse("2006-01-02", birthdayStr)
+				if err != nil {
+					return fmt.Errorf("row %d: invalid birthday format", rowNumber)
+				}
+				birthday = &t
+			}
+
+			var positionID uint
+			if _, err := fmt.Sscanf(positionIDStr, "%d", &positionID); err != nil {
+				return fmt.Errorf("row %d: invalid position ID", rowNumber)
+			}
+			uniquePositionIDs.Add(positionID)
+
+			var teamID *uint
+			if teamIDStr != "" && teamIDStr != "0" {
+				var tid uint
+				if _, err := fmt.Sscanf(teamIDStr, "%d", &tid); err == nil {
+					teamID = &tid
+				}
+			}
+			if teamID != nil {
+				uniqueTeamIDs.Add(*teamID)
+			}
+
+			u = &dtos.UserImportData{
+				Name:       name,
+				Email:      email,
+				Birthday:   birthday,
+				PositionID: positionID,
+				TeamID:     teamID,
+				Skills:     make([]dtos.SkillImportData, 0),
+			}
+			uniqueEmails.Add(email)
+			usersMap[email] = u
+		}
+
+		if skillIDStr != "" && skillIDStr != "0" {
+			var skillID uint
+			if _, err := fmt.Sscanf(skillIDStr, "%d", &skillID); err != nil {
+				return fmt.Errorf("row %d: invalid skill ID", rowNumber)
+			}
+			var level int
+			if _, err := fmt.Sscanf(skillLevelStr, "%d", &level); err != nil {
+				return fmt.Errorf("row %d: invalid skill level", rowNumber)
+			}
+			var usedYear int
+			if _, err := fmt.Sscanf(skillUsedYearStr, "%d", &usedYear); err != nil {
+				return fmt.Errorf("row %d: invalid skill used year number", rowNumber)
+			}
+
+			if skillID > 0 {
+				u.Skills = append(u.Skills, dtos.SkillImportData{
+					ID:             skillID,
+					Level:          level,
+					UsedYearNumber: usedYear,
+				})
+				uniqueSkillIDs.Add(skillID)
+			}
+		}
+	}
+
+	if err := s.validationService.validatePositionIDs(uniquePositionIDs.ToSlice()); err != nil {
+		return err
+	}
+
+	if err := s.validationService.validateSkillIDs(uniqueSkillIDs.ToSlice()); err != nil {
+		return err
+	}
+
+	if err := s.validationService.validateTeamIDs(uniqueTeamIDs.ToSlice()); err != nil {
+		return err
+	}
+
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		for _, u := range usersMap {
+			user := &models.User{
+				Name:          u.Name,
+				Email:         u.Email,
+				Birthday:      u.Birthday,
+				PositionID:    u.PositionID,
+				Role:          "user", // Admin role is not allowed to be created here
+				CurrentTeamID: u.TeamID,
+			}
+
+			if err := s.userRepository.CreateUser(tx, user); err != nil {
+				if appErrors.IsDuplicatedEntryError(err) {
+					return appErrors.ErrEmailAlreadyExists
+				}
+				return appErrors.ErrInternalServerError
+			}
+
+			userSkills := make([]models.UserSkill, 0, len(u.Skills))
+			for i := range u.Skills {
+				userSkills = append(userSkills, models.UserSkill{
+					UserID:         user.ID,
+					SkillID:        u.Skills[i].ID,
+					Level:          u.Skills[i].Level,
+					UsedYearNumber: u.Skills[i].UsedYearNumber,
+				})
+			}
+
+			if len(u.Skills) > 0 {
+				if err := s.userRepository.CreateUserSkills(tx, userSkills); err != nil {
+					return err
+				}
+			}
+
+			if user.CurrentTeamID != nil {
+				teamMember := &models.TeamMember{
+					UserID:   user.ID,
+					TeamID:   *user.CurrentTeamID,
+					JoinedAt: time.Now(),
+				}
+				if err := s.teamMemberRepository.Create(tx, teamMember); err != nil {
+					return err
+				}
+				if err := s.activityLogService.LogActivityDb(c, tx, types.JoinTeam, user.ID, user.Email, *user.CurrentTeamID); err != nil {
+					return err
+				}
+			}
+
+			if err := s.activityLogService.LogActivityDb(c, tx, types.CreateUser, user.ID); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }

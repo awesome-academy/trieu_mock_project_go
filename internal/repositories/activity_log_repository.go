@@ -45,3 +45,7 @@ func (r *ActivityLogRepository) FindByID(db *gorm.DB, id uint) (*models.Activity
 func (r *ActivityLogRepository) Delete(db *gorm.DB, id uint) error {
 	return db.Delete(&models.ActivityLog{}, id).Error
 }
+
+func (r *ActivityLogRepository) CreateInBatches(db *gorm.DB, logs []models.ActivityLog, batchSize int) error {
+	return db.CreateInBatches(logs, batchSize).Error
+}

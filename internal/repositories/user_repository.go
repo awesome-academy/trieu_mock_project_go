@@ -36,6 +36,17 @@ func (r *UserRepository) FindByID(db *gorm.DB, id uint) (*models.User, error) {
 	return &user, nil
 }
 
+func (r *UserRepository) FindByIDs(db *gorm.DB, ids []uint) ([]models.User, error) {
+	var users []models.User
+	result := db.
+		Where("id IN ?", ids).
+		Find(&users)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return users, nil
+}
+
 func (r *UserRepository) SearchUsers(db *gorm.DB, name *string, teamId *uint, limit, offset int) ([]models.User, int64, error) {
 	var users []models.User
 	query := db.Model(&models.User{})
@@ -141,4 +152,13 @@ func (r *UserRepository) UpdateUsersCurrentTeamToNullByTeamID(db *gorm.DB, teamI
 
 func (r *UserRepository) DeleteUser(db *gorm.DB, id uint) error {
 	return db.Delete(&models.User{}, id).Error
+}
+
+func (r *UserRepository) CountByIDs(db *gorm.DB, ids []uint) (int64, error) {
+	var count int64
+	result := db.Model(&models.User{}).Where("id IN ?", ids).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
 }

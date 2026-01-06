@@ -92,6 +92,10 @@ func (r *TeamMemberRepository) Create(db *gorm.DB, member *models.TeamMember) er
 	return db.Create(member).Error
 }
 
+func (r *TeamMemberRepository) CreateInBatches(db *gorm.DB, members []models.TeamMember, batchSize int) error {
+	return db.CreateInBatches(members, batchSize).Error
+}
+
 func (r *TeamMemberRepository) Update(db *gorm.DB, member *models.TeamMember) error {
 	return db.Model(&models.TeamMember{}).
 		Where("id = ?", member.ID).

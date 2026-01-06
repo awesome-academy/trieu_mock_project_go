@@ -54,6 +54,8 @@ var (
 	ErrCannotDeleteUserBeingProjectLeader = NewAppError(http.StatusBadRequest, "user cannot be deleted because they are a project leader")
 	ErrCannotDeleteUserBeingProjectMember = NewAppError(http.StatusBadRequest, "user cannot be deleted because they are a project member")
 	ErrActivityLogNotFound                = NewAppError(http.StatusNotFound, "activity log not found")
+	ErrNoCSVDataToImport                  = NewAppError(http.StatusBadRequest, "no CSV data to import")
+	ErrInvalidCSVFormat                   = NewAppError(http.StatusBadRequest, "invalid CSV format")
 )
 
 // Error response

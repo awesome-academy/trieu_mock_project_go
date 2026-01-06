@@ -91,5 +91,8 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 		// Export data
 		adminGroup.GET("/export/csv", appContainer.CSRFMiddleware, appContainer.AdminExportCsvHandler.ExportCSVPage)
 		adminGroup.POST("/export/csv", appContainer.CSRFMiddleware, appContainer.AdminExportCsvHandler.ExportCSV)
+		// Import data
+		adminGroup.GET("/import/csv", appContainer.CSRFMiddleware, appContainer.AdminExportCsvHandler.ImportCSVPage)
+		adminGroup.POST("/import/csv", appContainer.CSRFMiddleware, appContainer.AdminExportCsvHandler.ImportCSV)
 	}
 }

@@ -3,12 +3,14 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 	"trieu_mock_project_go/helpers"
 	"trieu_mock_project_go/internal/dtos"
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/repositories"
 	"trieu_mock_project_go/internal/types"
+	"trieu_mock_project_go/internal/utils"
 	"trieu_mock_project_go/models"
 
 	"gorm.io/gorm"
@@ -440,4 +442,117 @@ func (s *TeamsService) ExportTeamsToCSV(c context.Context) ([][]string, error) {
 		})
 	}
 	return data, nil
+}
+
+func (s *TeamsService) ImportTeamsFromCSV(c context.Context, data [][]string) error {
+	if len(data) <= 1 {
+		return appErrors.ErrNoCSVDataToImport
+	}
+
+	var teamsToImport []dtos.TeamImportData
+	uniqueTeamNames := utils.NewSet[string]()
+	leaderIDSet := utils.NewSet[uint]()
+
+	for i, row := range data {
+		if i == 0 {
+			continue
+		}
+		rowNumber := i + 1
+		if len(row) < 3 {
+			return fmt.Errorf("row %d: invalid number of columns", rowNumber)
+		}
+
+		name := strings.TrimSpace(row[0])
+		description := strings.TrimSpace(row[1])
+		leaderIDStr := strings.TrimSpace(row[2])
+
+		if name == "" || leaderIDStr == "" {
+			return fmt.Errorf("row %d: name and leader ID are required", rowNumber)
+		}
+
+		var leaderID uint
+		if _, err := fmt.Sscanf(leaderIDStr, "%d", &leaderID); err != nil {
+			return fmt.Errorf("row %d: invalid leader ID", rowNumber)
+		}
+
+		if uniqueTeamNames.Has(name) {
+			return fmt.Errorf("duplicate team name '%s' in CSV", name)
+		}
+
+		uniqueTeamNames.Add(name)
+		var descPtr *string
+		if description != "" {
+			descPtr = &description
+		}
+		teamsToImport = append(teamsToImport, dtos.TeamImportData{
+			Name:        name,
+			Description: descPtr,
+			LeaderID:    leaderID,
+		})
+		if !leaderIDSet.Has(leaderID) {
+			leaderIDSet.Add(leaderID)
+		}
+	}
+
+	leaders, err := s.userRepository.FindByIDs(s.db.WithContext(c), leaderIDSet.ToSlice())
+	if err != nil {
+		return appErrors.ErrInternalServerError
+	}
+	if len(leaders) != leaderIDSet.Size() {
+		return appErrors.ErrUserNotFound
+	}
+	leaderMap := make(map[uint]models.User)
+	for _, leader := range leaders {
+		leaderMap[leader.ID] = leader
+	}
+
+	activityLogs := make([]models.ActivityLog, 0, len(teamsToImport)*2)
+	teamMembers := make([]models.TeamMember, 0, len(teamsToImport))
+	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		for _, t := range teamsToImport {
+			newTeam := models.Team{
+				Name:        t.Name,
+				Description: t.Description,
+				LeaderID:    t.LeaderID,
+			}
+			if err := s.teamRepository.Create(tx, &newTeam); err != nil {
+				if appErrors.IsDuplicatedEntryError(err) {
+					return appErrors.ErrTeamAlreadyExists
+				}
+				return appErrors.ErrInternalServerError
+			}
+
+			leader := leaderMap[newTeam.LeaderID]
+			leader.CurrentTeamID = &newTeam.ID
+			if err := s.userRepository.UpdateUser(tx, &leader); err != nil {
+				return appErrors.ErrInternalServerError
+			}
+
+			teamMember := models.TeamMember{
+				UserID:   newTeam.LeaderID,
+				TeamID:   newTeam.ID,
+				JoinedAt: time.Now(),
+			}
+			teamMembers = append(teamMembers, teamMember)
+
+			joinLog, err := s.activityLogService.createLogActivityModel(c, types.JoinTeam, newTeam.LeaderID, leader.Email, newTeam.ID)
+			if err != nil {
+				return err
+			}
+			activityLogs = append(activityLogs, *joinLog)
+		}
+
+		if err := s.teamMemberRepository.CreateInBatches(tx, teamMembers, 100); err != nil {
+			if appErrors.IsDuplicatedEntryError(err) {
+				return appErrors.ErrTeamLeaderAlreadyInAnotherTeam
+			}
+			return appErrors.ErrInternalServerError
+		}
+
+		if err := s.activityLogService.createInBatches(tx, activityLogs, 100); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+
+		return nil
+	})
 }

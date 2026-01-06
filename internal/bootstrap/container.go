@@ -55,9 +55,9 @@ func NewAppContainer() *AppContainer {
 
 	// Initialize services
 	activityLogService := services.NewActivityLogService(config.DB, activityLogRepo)
-	validationService := services.NewValidationService(config.DB, teamMemberRepo)
+	validationService := services.NewValidationService(config.DB, teamMemberRepo, userRepo, positionRepo, skillRepo, teamsRepo)
 	authService := services.NewAuthService(config.DB, userRepo, activityLogService)
-	userService := services.NewUserService(config.DB, userRepo, teamsRepo, projectRepo, projectMemberRepo, teamMemberRepo, activityLogService)
+	userService := services.NewUserService(config.DB, userRepo, teamsRepo, projectRepo, projectMemberRepo, teamMemberRepo, activityLogService, validationService)
 	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo, userRepo, projectRepo, projectMemberRepo, activityLogService)
 	positionService := services.NewPositionService(config.DB, positionRepo, activityLogService)
 	projectService := services.NewProjectService(config.DB, projectRepo, validationService, activityLogService)

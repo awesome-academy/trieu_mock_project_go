@@ -1,0 +1,126 @@
+{{define "pages/admin_import_csv.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {{template "partials/admin_head.html" .}}
+    <style>
+      .import-card {
+        border-radius: 15px;
+        border: none;
+      }
+      .import-header {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+        border-radius: 15px 15px 0 0;
+        padding: 2rem;
+      }
+    </style>
+  </head>
+  <body>
+    {{template "partials/admin_navbar.html" .}}
+
+    <div class="container mt-5">
+      <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+          <div class="card shadow-sm import-card">
+            <div class="import-header">
+              <h3 class="fw-bold mb-0">
+                <i class="bi bi-file-earmark-arrow-up me-2"></i>Import Data
+              </h3>
+              <p class="mb-0 opacity-75">
+                Select the type of data and upload your CSV file
+              </p>
+            </div>
+            <div class="card-body p-4">
+              {{ if .error }}
+              <div
+                class="alert alert-danger alert-dismissible fade show"
+                role="alert"
+              >
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                {{ .error }}
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="alert"
+                  aria-label="Close"
+                ></button>
+              </div>
+              {{ end }} {{ if .success }}
+              <div
+                class="alert alert-success alert-dismissible fade show"
+                role="alert"
+              >
+                <i class="bi bi-check-circle-fill me-2"></i>
+                {{ .success }}
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="alert"
+                  aria-label="Close"
+                ></button>
+              </div>
+              {{ end }}
+              <form
+                id="importForm"
+                action="/admin/import/csv"
+                method="POST"
+                enctype="multipart/form-data"
+              >
+                <input type="hidden" name="_csrf" value="{{.csrfToken}}" />
+                <div class="mb-4">
+                  <label for="importType" class="form-label fw-bold"
+                    >Data Type</label
+                  >
+                  <select
+                    class="form-select form-select-lg"
+                    id="importType"
+                    name="type"
+                    required
+                  >
+                    <option value="" selected disabled>
+                      Choose data type...
+                    </option>
+                    <option value="user">Users (with Skills)</option>
+                    <option value="position">Positions</option>
+                    <option value="project">Projects (with Members)</option>
+                    <option value="skill">Skills</option>
+                    <option value="team">Teams</option>
+                  </select>
+                </div>
+                <div class="mb-4">
+                  <label for="importFile" class="form-label fw-bold"
+                    >CSV File</label
+                  >
+                  <input
+                    class="form-control form-control-lg"
+                    type="file"
+                    id="importFile"
+                    name="file"
+                    accept=".csv"
+                    required
+                  />
+                  <div class="form-text">
+                    Format should match the exported CSV (without the ID
+                    column).
+                  </div>
+                </div>
+                <div class="d-grid">
+                  <button
+                    type="submit"
+                    class="btn btn-success btn-lg rounded-pill"
+                  >
+                    <i class="bi bi-upload me-2"></i>Import CSV
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {{template "partials/admin_scripts.html" .}}
+  </body>
+</html>
+{{end}}
