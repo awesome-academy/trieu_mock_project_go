@@ -364,3 +364,28 @@ func MapActivityLogsToActivityLogSummaries(logs []models.ActivityLog) []dtos.Act
 	}
 	return summaries
 }
+
+func MapNotificationToNotificationResponse(notification *models.Notification) *dtos.NotificationResponse {
+	if notification == nil {
+		return nil
+	}
+	return &dtos.NotificationResponse{
+		ID:        notification.ID,
+		UserID:    notification.UserID,
+		Title:     notification.Title,
+		Content:   notification.Content,
+		IsRead:    notification.IsRead,
+		CreatedAt: notification.CreatedAt,
+	}
+}
+
+func MapNotificationsToNotificationResponses(notifications []models.Notification) []dtos.NotificationResponse {
+	responses := make([]dtos.NotificationResponse, 0, len(notifications))
+	for _, notification := range notifications {
+		response := MapNotificationToNotificationResponse(&notification)
+		if response != nil {
+			responses = append(responses, *response)
+		}
+	}
+	return responses
+}

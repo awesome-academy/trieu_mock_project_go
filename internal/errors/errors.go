@@ -44,6 +44,7 @@ var (
 	ErrTeamAlreadyExists                  = NewAppError(http.StatusConflict, "team with name already exists")
 	ErrTeamLeaderAlreadyInAnotherTeam     = NewAppError(http.StatusBadRequest, "team leader is already leading another team")
 	ErrTeamNotFound                       = NewAppError(http.StatusNotFound, "team not found")
+	ErrNoChangesDetected                  = NewAppError(http.StatusBadRequest, "no changes detected")
 	ErrUserAlreadyInTeam                  = NewAppError(http.StatusBadRequest, "user is already a member of the team")
 	ErrUserNotInTeam                      = NewAppError(http.StatusBadRequest, "user is not a member of the team")
 	ErrCannotRemoveOrMoveTeamLeader       = NewAppError(http.StatusBadRequest, "cannot remove or move the team leader from the team")

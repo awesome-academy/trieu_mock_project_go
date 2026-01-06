@@ -229,6 +229,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const data = {
       name: formData.get("name"),
       description: description === "" ? null : description,
+      leader_id: parseInt(formData.get("leader_id")),
     };
 
     try {

@@ -1,0 +1,95 @@
+{{define "pages/notifications.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {{template "partials/head.html" .}}
+    <style>
+      .notification-card {
+        border-radius: 10px;
+        transition: background-color 0.2s;
+        cursor: pointer;
+      }
+      .notification-unread {
+        background-color: #f0f7ff;
+        border-left: 4px solid #007bff;
+      }
+      .notification-card:hover {
+        background-color: #f8f9fa;
+      }
+      .notification-time {
+        font-size: 0.85rem;
+        color: #6c757d;
+      }
+    </style>
+  </head>
+  <body>
+    {{template "partials/navbar.html" .}}
+
+    <div class="container mt-5">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Notifications</h2>
+        <button id="mark-all-read" class="btn btn-outline-primary btn-sm">
+          Mark all as read
+        </button>
+      </div>
+
+      <div id="notifications-list" class="list-group shadow-sm">
+        <div class="text-center p-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="pagination" class="mt-4 d-flex justify-content-center"></div>
+    </div>
+
+    <!-- Notification Detail Modal -->
+    <div
+      class="modal fade"
+      id="notificationModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modal-title">Notification Details</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p id="modal-content"></p>
+            <p class="text-muted small" id="modal-time"></p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              id="delete-notification"
+              class="btn btn-danger"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {{template "partials/scripts.html" .}}
+    <script src="/static/js/services/notification_service.js"></script>
+    <script src="/static/js/common/auth.js"></script>
+    <script src="/static/js/notifications.js"></script>
+  </body>
+</html>
+{{end}}

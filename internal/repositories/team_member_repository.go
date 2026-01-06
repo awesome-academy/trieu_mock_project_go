@@ -50,6 +50,17 @@ func (r *TeamMemberRepository) CountActiveMembersByTeamID(db *gorm.DB, teamID ui
 	return count, nil
 }
 
+func (r *TeamMemberRepository) FindAllActiveMemberIDsByTeamID(db *gorm.DB, teamID uint) ([]uint, error) {
+	var userIDs []uint
+	result := db.Model(&models.TeamMember{}).
+		Where("team_id = ? AND left_at IS NULL", teamID).
+		Pluck("user_id", &userIDs)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return userIDs, nil
+}
+
 func (r *TeamMemberRepository) FindTeamMembersByTeamID(db *gorm.DB, teamID uint, limit, offset int) ([]models.TeamMember, error) {
 	var members []models.TeamMember
 	result := db.
