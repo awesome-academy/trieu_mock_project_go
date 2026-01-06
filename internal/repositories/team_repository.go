@@ -61,6 +61,15 @@ func (r *TeamsRepository) FindAllTeamsSummary(db *gorm.DB) ([]models.Team, error
 	return teams, nil
 }
 
+func (r *TeamsRepository) FindAllTeamsWithLeader(db *gorm.DB) ([]models.Team, error) {
+	var teams []models.Team
+	result := db.Preload("Leader").Find(&teams)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return teams, nil
+}
+
 func (r *TeamsRepository) Create(db *gorm.DB, team *models.Team) error {
 	return db.Create(team).Error
 }

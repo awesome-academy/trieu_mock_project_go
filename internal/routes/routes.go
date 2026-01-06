@@ -88,5 +88,8 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 		adminGroup.GET("/activity-logs", appContainer.CSRFMiddleware, appContainer.AdminActivityLogHandler.AdminActivityLogsPage)
 		adminGroup.GET("/activity-logs/partial/search", appContainer.AdminActivityLogHandler.ActivityLogsSearchPartial)
 		adminGroup.DELETE("/activity-logs/:activityLogId", appContainer.CSRFMiddleware, appContainer.AdminActivityLogHandler.DeleteActivityLog)
+		// Export data
+		adminGroup.GET("/export/csv", appContainer.CSRFMiddleware, appContainer.AdminExportCsvHandler.ExportCSVPage)
+		adminGroup.POST("/export/csv", appContainer.CSRFMiddleware, appContainer.AdminExportCsvHandler.ExportCSV)
 	}
 }

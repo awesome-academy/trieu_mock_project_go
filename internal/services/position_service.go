@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"trieu_mock_project_go/helpers"
 	"trieu_mock_project_go/internal/dtos"
@@ -136,4 +137,21 @@ func (s *PositionService) DeletePosition(c context.Context, id uint) error {
 		}
 		return nil
 	})
+}
+
+func (s *PositionService) ExportPositionsToCSV(c context.Context) ([][]string, error) {
+	positions, err := s.positionRepository.FindAllPositionsSummary(s.db.WithContext(c))
+	if err != nil {
+		return nil, appErrors.ErrInternalServerError
+	}
+
+	data := [][]string{{"ID", "Name", "Abbreviation"}}
+	for _, p := range positions {
+		data = append(data, []string{
+			fmt.Sprintf("%d", p.ID),
+			p.Name,
+			p.Abbreviation,
+		})
+	}
+	return data, nil
 }

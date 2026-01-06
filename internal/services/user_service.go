@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"time"
 	"trieu_mock_project_go/helpers"
 	"trieu_mock_project_go/internal/dtos"
@@ -309,4 +310,40 @@ func (s *UserService) DeleteUser(c context.Context, id uint) error {
 		}
 		return nil
 	})
+}
+
+func (s *UserService) ExportUsersToCSV(c context.Context) ([][]string, error) {
+	users, err := s.userRepository.FindAllUsersWithSkills(s.db.WithContext(c))
+	if err != nil {
+		return nil, appErrors.ErrInternalServerError
+	}
+
+	data := [][]string{{"ID", "Name", "Email", "Birthday", "PositionId", "PositionName", "TeamId", "TeamName", "SkillId", "SkillName", "SkillLevel", "SkillUsedYearNumber"}}
+	for _, u := range users {
+		birthday := ""
+		if u.Birthday != nil {
+			birthday = u.Birthday.Format("2006-01-02")
+		}
+		teamName := ""
+		if u.CurrentTeam != nil {
+			teamName = u.CurrentTeam.Name
+		}
+		for _, userSkill := range u.UserSkill {
+			data = append(data, []string{
+				fmt.Sprintf("%d", u.ID),
+				u.Name,
+				u.Email,
+				birthday,
+				fmt.Sprintf("%d", u.Position.ID),
+				u.Position.Name,
+				fmt.Sprintf("%d", u.CurrentTeamID),
+				teamName,
+				fmt.Sprintf("%d", userSkill.Skill.ID),
+				userSkill.Skill.Name,
+				fmt.Sprintf("%d", userSkill.Level),
+				fmt.Sprintf("%d", userSkill.UsedYearNumber),
+			})
+		}
+	}
+	return data, nil
 }

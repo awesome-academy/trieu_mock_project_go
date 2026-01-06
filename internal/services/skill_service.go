@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"trieu_mock_project_go/helpers"
 	"trieu_mock_project_go/internal/dtos"
@@ -133,4 +134,20 @@ func (s *SkillService) DeleteSkill(c context.Context, id uint) error {
 		}
 		return nil
 	})
+}
+
+func (s *SkillService) ExportSkillsToCSV(c context.Context) ([][]string, error) {
+	skills, err := s.skillRepository.FindAllSkillSummary(s.db.WithContext(c))
+	if err != nil {
+		return nil, appErrors.ErrInternalServerError
+	}
+
+	data := [][]string{{"ID", "Name"}}
+	for _, s := range skills {
+		data = append(data, []string{
+			fmt.Sprintf("%d", s.ID),
+			s.Name,
+		})
+	}
+	return data, nil
 }

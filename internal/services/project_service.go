@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 	"trieu_mock_project_go/helpers"
@@ -161,4 +162,39 @@ func (s *ProjectService) DeleteProject(c context.Context, id uint) error {
 		}
 		return nil
 	})
+}
+
+func (s *ProjectService) ExportProjectsToCSV(c context.Context) ([][]string, error) {
+	projects, err := s.projectRepository.FindAllProjectsWithMembers(s.db.WithContext(c))
+	if err != nil {
+		return nil, appErrors.ErrInternalServerError
+	}
+
+	data := [][]string{{"ID", "Name", "Abbreviation", "Start Date", "End Date", "LeaderId", "LeaderName", "TeamId", "TeamName", "MemberId", "MemberName"}}
+	for _, p := range projects {
+		startDate := ""
+		if p.StartDate != nil {
+			startDate = p.StartDate.Format("2006-01-02")
+		}
+		endDate := ""
+		if p.EndDate != nil {
+			endDate = p.EndDate.Format("2006-01-02")
+		}
+		for _, member := range p.Members {
+			data = append(data, []string{
+				fmt.Sprintf("%d", p.ID),
+				p.Name,
+				p.Abbreviation,
+				startDate,
+				endDate,
+				fmt.Sprintf("%d", p.Leader.ID),
+				p.Leader.Name,
+				fmt.Sprintf("%d", p.Team.ID),
+				p.Team.Name,
+				fmt.Sprintf("%d", member.ID),
+				member.Name,
+			})
+		}
+	}
+	return data, nil
 }

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"time"
 	"trieu_mock_project_go/helpers"
 	"trieu_mock_project_go/internal/dtos"
@@ -416,4 +417,27 @@ func (s *TeamsService) RemoveMemberFromTeam(c context.Context, teamID uint, user
 		}
 		return nil
 	})
+}
+
+func (s *TeamsService) ExportTeamsToCSV(c context.Context) ([][]string, error) {
+	teams, err := s.teamRepository.FindAllTeamsWithLeader(s.db.WithContext(c))
+	if err != nil {
+		return nil, appErrors.ErrInternalServerError
+	}
+
+	data := [][]string{{"ID", "Name", "Description", "LeaderId", "LeaderName"}}
+	for _, t := range teams {
+		description := ""
+		if t.Description != nil {
+			description = *t.Description
+		}
+		data = append(data, []string{
+			fmt.Sprintf("%d", t.ID),
+			t.Name,
+			description,
+			fmt.Sprintf("%d", t.LeaderID),
+			t.Leader.Name,
+		})
+	}
+	return data, nil
 }
