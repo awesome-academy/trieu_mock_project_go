@@ -93,6 +93,7 @@ func (s *UserService) CreateUser(c context.Context, req dtos.CreateOrUpdateUserR
 	user := &models.User{
 		Name:          req.Name,
 		Email:         req.Email,
+		Password:      utils.GenerateDefaultHashedPassword(),
 		Birthday:      birthday,
 		PositionID:    req.PositionID,
 		Role:          "user", // Admin role is not allowed to be created here
@@ -470,6 +471,7 @@ func (s *UserService) ImportUsersFromCSV(c context.Context, data [][]string) err
 			user := &models.User{
 				Name:          u.Name,
 				Email:         u.Email,
+				Password:      utils.GenerateDefaultHashedPassword(),
 				Birthday:      u.Birthday,
 				PositionID:    u.PositionID,
 				Role:          "user", // Admin role is not allowed to be created here
