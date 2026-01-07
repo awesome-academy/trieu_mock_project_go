@@ -330,6 +330,10 @@ func (s *UserService) ExportUsersToCSV(c context.Context) ([][]string, error) {
 		if u.Birthday != nil {
 			birthday = u.Birthday.Format("2006-01-02")
 		}
+		teamID := ""
+		if u.CurrentTeamID != nil {
+			teamID = fmt.Sprintf("%d", *u.CurrentTeamID)
+		}
 		teamName := ""
 		if u.CurrentTeam != nil {
 			teamName = u.CurrentTeam.Name
@@ -342,7 +346,7 @@ func (s *UserService) ExportUsersToCSV(c context.Context) ([][]string, error) {
 				birthday,
 				fmt.Sprintf("%d", u.Position.ID),
 				u.Position.Name,
-				fmt.Sprintf("%d", *u.CurrentTeamID),
+				teamID,
 				teamName,
 				fmt.Sprintf("%d", userSkill.Skill.ID),
 				userSkill.Skill.Name,
