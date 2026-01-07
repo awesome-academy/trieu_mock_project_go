@@ -199,20 +199,24 @@ func (s *ProjectService) ExportProjectsToCSV(c context.Context) ([][]string, err
 		if p.EndDate != nil {
 			endDate = p.EndDate.Format("2006-01-02")
 		}
-		for _, member := range p.Members {
-			data = append(data, []string{
-				fmt.Sprintf("%d", p.ID),
-				p.Name,
-				p.Abbreviation,
-				startDate,
-				endDate,
-				fmt.Sprintf("%d", p.Leader.ID),
-				p.Leader.Name,
-				fmt.Sprintf("%d", p.Team.ID),
-				p.Team.Name,
-				fmt.Sprintf("%d", member.ID),
-				member.Name,
-			})
+		projectBasicInfo := []string{
+			fmt.Sprintf("%d", p.ID),
+			p.Name,
+			p.Abbreviation,
+			startDate,
+			endDate,
+			fmt.Sprintf("%d", p.Leader.ID),
+			p.Leader.Name,
+			fmt.Sprintf("%d", p.Team.ID),
+			p.Team.Name,
+		}
+		if len(p.Members) == 0 {
+			data = append(data, append(projectBasicInfo, "", ""))
+			continue
+		} else {
+			for _, member := range p.Members {
+				data = append(data, append(projectBasicInfo, fmt.Sprintf("%d", member.ID), member.Name))
+			}
 		}
 	}
 	return data, nil

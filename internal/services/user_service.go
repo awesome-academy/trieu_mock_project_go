@@ -338,21 +338,35 @@ func (s *UserService) ExportUsersToCSV(c context.Context) ([][]string, error) {
 		if u.CurrentTeam != nil {
 			teamName = u.CurrentTeam.Name
 		}
-		for _, userSkill := range u.UserSkill {
-			data = append(data, []string{
-				fmt.Sprintf("%d", u.ID),
-				u.Name,
-				u.Email,
-				birthday,
-				fmt.Sprintf("%d", u.Position.ID),
-				u.Position.Name,
-				teamID,
-				teamName,
-				fmt.Sprintf("%d", userSkill.Skill.ID),
-				userSkill.Skill.Name,
-				fmt.Sprintf("%d", userSkill.Level),
-				fmt.Sprintf("%d", userSkill.UsedYearNumber),
-			})
+		teamBasicInfo := []string{
+			fmt.Sprintf("%d", u.ID),
+			u.Name,
+			u.Email,
+			birthday,
+			fmt.Sprintf("%d", u.Position.ID),
+			u.Position.Name,
+			teamID,
+			teamName,
+		}
+
+		if len(u.UserSkill) == 0 {
+			row := append(teamBasicInfo,
+				"",
+				"",
+				"",
+				"",
+			)
+			data = append(data, row)
+		} else {
+			for _, userSkill := range u.UserSkill {
+				row := append(teamBasicInfo,
+					fmt.Sprintf("%d", userSkill.Skill.ID),
+					userSkill.Skill.Name,
+					fmt.Sprintf("%d", userSkill.Level),
+					fmt.Sprintf("%d", userSkill.UsedYearNumber),
+				)
+				data = append(data, row)
+			}
 		}
 	}
 	return data, nil
