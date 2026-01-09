@@ -13,6 +13,7 @@ type Config struct {
 	Database      DatabaseConfig
 	SessionConfig SessionConfig
 	JWT           JWTConfig
+	Mail          MailConfig
 }
 
 type ServerConfig struct {
@@ -41,6 +42,14 @@ type JWTConfig struct {
 	Secret string
 }
 
+type MailConfig struct {
+	SMTPHost     string
+	SMTPPort     int
+	SMTPUser     string
+	SMTPPassword string
+	SenderEmail  string
+}
+
 var (
 	cfg  *Config
 	once sync.Once
@@ -64,6 +73,10 @@ func LoadConfig() *Config {
 		if err != nil {
 			maxOpenConns = 100
 		}
+		smtpPort, err := strconv.Atoi(getEnv("SMTP_PORT", "1025"))
+		if err != nil {
+			smtpPort = 1025
+		}
 		cfg = &Config{
 			Server: ServerConfig{
 				Host: getEnv("SERVER_HOST", "localhost"),
@@ -86,6 +99,13 @@ func LoadConfig() *Config {
 			},
 			JWT: JWTConfig{
 				Secret: getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
+			},
+			Mail: MailConfig{
+				SMTPHost:     getEnv("SMTP_HOST", "localhost"),
+				SMTPPort:     smtpPort,
+				SMTPUser:     getEnv("SMTP_USER", ""),
+				SMTPPassword: getEnv("SMTP_PASSWORD", ""),
+				SenderEmail:  getEnv("SENDER_EMAIL", "no-reply@trieu-mock-project-go.com"),
 			},
 		}
 	})

@@ -23,10 +23,11 @@ type ProjectService struct {
 	validationService   *ValidationService
 	activityLogService  *ActivityLogService
 	notificationService *NotificationService
+	emailService        *EmailService
 }
 
-func NewProjectService(db *gorm.DB, projectRepository *repositories.ProjectRepository, userRepository *repositories.UserRepository, validationService *ValidationService, activityLogService *ActivityLogService, notificationService *NotificationService) *ProjectService {
-	return &ProjectService{db: db, projectRepository: projectRepository, userRepository: userRepository, validationService: validationService, activityLogService: activityLogService, notificationService: notificationService}
+func NewProjectService(db *gorm.DB, projectRepository *repositories.ProjectRepository, userRepository *repositories.UserRepository, validationService *ValidationService, activityLogService *ActivityLogService, notificationService *NotificationService, emailService *EmailService) *ProjectService {
+	return &ProjectService{db: db, projectRepository: projectRepository, userRepository: userRepository, validationService: validationService, activityLogService: activityLogService, notificationService: notificationService, emailService: emailService}
 }
 
 func (s *ProjectService) GetAllProjectSummary(c context.Context) []dtos.ProjectSummary {
@@ -103,6 +104,19 @@ func (s *ProjectService) CreateProject(c context.Context, req dtos.CreateOrUpdat
 		if err := s.notificationService.NotifyProjectCreated(c, tx, project, req.MemberIDs); err != nil {
 			return err
 		}
+
+		// Send email notifications to all members
+		members, err := s.userRepository.FindByIDs(tx, req.MemberIDs)
+		if err == nil {
+			for _, m := range members {
+				s.emailService.SendProjectJoinEmail(dtos.ProjectMembershipEmailDTO{
+					To:          m.Email,
+					UserName:    m.Name,
+					ProjectName: project.Name,
+				})
+			}
+		}
+
 		return nil
 	})
 }
@@ -154,6 +168,51 @@ func (s *ProjectService) UpdateProject(c context.Context, id uint, req dtos.Crea
 		if err := s.notificationService.NotifyProjectUpdated(c, tx, currentProject, currentMemberIDs, projectToUpdate, req.MemberIDs); err != nil {
 			return err
 		}
+
+		// Send email notifications for added/removed members
+		currentSet := utils.NewSet[uint]()
+		for _, id := range currentMemberIDs {
+			currentSet.Add(id)
+		}
+		updatedSet := utils.NewSet[uint]()
+		for _, id := range req.MemberIDs {
+			updatedSet.Add(id)
+		}
+
+		addedIDs := make([]uint, 0)
+		for id := range updatedSet {
+			if !currentSet.Has(id) {
+				addedIDs = append(addedIDs, id)
+			}
+		}
+		removedIDs := make([]uint, 0)
+		for id := range currentSet {
+			if !updatedSet.Has(id) {
+				removedIDs = append(removedIDs, id)
+			}
+		}
+
+		if len(addedIDs) > 0 {
+			addedMembers, _ := s.userRepository.FindByIDs(tx, addedIDs)
+			for _, m := range addedMembers {
+				s.emailService.SendProjectJoinEmail(dtos.ProjectMembershipEmailDTO{
+					To:          m.Email,
+					UserName:    m.Name,
+					ProjectName: projectToUpdate.Name,
+				})
+			}
+		}
+		if len(removedIDs) > 0 {
+			removedMembers, _ := s.userRepository.FindByIDs(tx, removedIDs)
+			for _, m := range removedMembers {
+				s.emailService.SendProjectLeaveEmail(dtos.ProjectMembershipEmailDTO{
+					To:          m.Email,
+					UserName:    m.Name,
+					ProjectName: projectToUpdate.Name,
+				})
+			}
+		}
+
 		return nil
 	})
 }
@@ -345,6 +404,18 @@ func (s *ProjectService) ImportProjectsFromCSV(c context.Context, data [][]strin
 				return err
 			}
 			activityLogs = append(activityLogs, *activityLog)
+
+			// Send email notifications to all members
+			members, errRepo := s.userRepository.FindByIDs(tx, p.MemberIDs)
+			if errRepo == nil {
+				for _, m := range members {
+					s.emailService.SendProjectJoinEmail(dtos.ProjectMembershipEmailDTO{
+						To:          m.Email,
+						UserName:    m.Name,
+						ProjectName: project.Name,
+					})
+				}
+			}
 		}
 
 		if err := s.activityLogService.createInBatches(tx, activityLogs, 100); err != nil {
