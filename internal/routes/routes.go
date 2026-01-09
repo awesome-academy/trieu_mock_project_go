@@ -17,6 +17,9 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 	router.GET("/teams/:id", appContainer.TeamsHandler.TeamDetailsPageHandler)
 	router.GET("/notifications", appContainer.NotificationHandler.NotificationsPageHandler)
 
+	// WebSocket for notifications
+	router.GET("/ws", appContainer.NotificationHandler.HandleWS)
+
 	// Normal user routes (JWT)
 	apiGroup := router.Group("/api")
 	apiGroup.Use(appContainer.JWTAuthMiddleware)
