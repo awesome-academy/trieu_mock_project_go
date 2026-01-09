@@ -73,6 +73,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         await NotificationService.markAsRead(n.id);
         n.is_read = true;
         renderNotifications(currentNotifications);
+        if (typeof NotificationApp !== "undefined") {
+          NotificationApp.loadUnreadCount();
+        }
       } catch (error) {
         console.error("Failed to mark as read", error);
       }
@@ -83,6 +86,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       await NotificationService.markAllAsRead();
       await loadNotifications();
+      if (typeof NotificationApp !== "undefined") {
+        NotificationApp.loadUnreadCount();
+      }
     } catch (error) {
       alert("Failed to mark all as read");
     }
@@ -95,10 +101,22 @@ document.addEventListener("DOMContentLoaded", async () => {
         await NotificationService.deleteNotification(selectedNotificationID);
         modal.hide();
         await loadNotifications();
+        if (typeof NotificationApp !== "undefined") {
+          NotificationApp.loadUnreadCount();
+        }
       } catch (error) {
         alert("Failed to delete notification");
       }
     }
+  });
+
+  // Listen for new notifications pushed via WebSocket
+  let refreshTimer = null;
+  window.addEventListener("notificationReceived", () => {
+    if (refreshTimer) clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(() => {
+      loadNotifications();
+    }, 100);
   });
 
   await loadNotifications();
