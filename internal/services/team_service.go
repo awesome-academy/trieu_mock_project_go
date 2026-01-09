@@ -24,6 +24,7 @@ type TeamsService struct {
 	projectRepository       *repositories.ProjectRepository
 	projectMemberRepository *repositories.ProjectMemberRepository
 	activityLogService      *ActivityLogService
+	notificationService     *NotificationService
 }
 
 func NewTeamsService(db *gorm.DB,
@@ -32,7 +33,8 @@ func NewTeamsService(db *gorm.DB,
 	userRepository *repositories.UserRepository,
 	projectRepository *repositories.ProjectRepository,
 	projectMemberRepository *repositories.ProjectMemberRepository,
-	activityLogService *ActivityLogService) *TeamsService {
+	activityLogService *ActivityLogService,
+	notificationService *NotificationService) *TeamsService {
 	return &TeamsService{
 		db:                      db,
 		teamRepository:          teamRepository,
@@ -41,6 +43,7 @@ func NewTeamsService(db *gorm.DB,
 		projectRepository:       projectRepository,
 		projectMemberRepository: projectMemberRepository,
 		activityLogService:      activityLogService,
+		notificationService:     notificationService,
 	}
 }
 
@@ -178,12 +181,16 @@ func (s *TeamsService) CreateTeam(c context.Context, req dtos.CreateOrUpdateTeam
 			return appErrors.ErrInternalServerError
 		}
 
-		if err := s.activityLogService.LogActivityDb(c, tx, types.JoinTeam, leader.ID, leader.Email, team.ID); err != nil {
-			return appErrors.ErrInternalServerError
+		if err := s.activityLogService.LogActivityDb(c, tx, types.CreateTeam, team.ID, team.Name); err != nil {
+			return err
 		}
 
-		if err := s.activityLogService.LogActivityDb(c, tx, types.CreateTeam, team.ID, team.Name); err != nil {
-			return appErrors.ErrInternalServerError
+		if err := s.activityLogService.LogActivityDb(c, tx, types.JoinTeam, leader.ID, leader.Email, team.ID); err != nil {
+			return err
+		}
+
+		if err := s.notificationService.NotifyTeamCreated(c, tx, team, leader.Name); err != nil {
+			return err
 		}
 		return nil
 	})
@@ -196,6 +203,13 @@ func (s *TeamsService) UpdateTeam(c context.Context, id uint, req dtos.CreateOrU
 			return appErrors.ErrTeamNotFound
 		}
 		return appErrors.ErrInternalServerError
+	}
+
+	isNameChanged := team.Name != req.Name
+	isDescriptionChanged := team.Description != req.Description
+	isLeaderChanged := team.LeaderID != req.LeaderID
+	if !isNameChanged && !isDescriptionChanged && !isLeaderChanged {
+		return appErrors.ErrNoChangesDetected
 	}
 
 	team.Name = req.Name
@@ -244,7 +258,7 @@ func (s *TeamsService) UpdateTeam(c context.Context, id uint, req dtos.CreateOrU
 				}
 
 				if err := s.activityLogService.LogActivityDb(c, tx, types.JoinTeam, newLeader.ID, newLeader.Email, team.ID); err != nil {
-					return appErrors.ErrInternalServerError
+					return err
 				}
 			}
 		} else {
@@ -257,14 +271,18 @@ func (s *TeamsService) UpdateTeam(c context.Context, id uint, req dtos.CreateOrU
 		}
 
 		if err := s.activityLogService.LogActivityDb(c, tx, types.UpdateTeam, team.ID, team.Name); err != nil {
-			return appErrors.ErrInternalServerError
+			return err
+		}
+
+		if err := s.notificationService.NotifyTeamUpdated(c, tx, team.ID, team.Name, isNameChanged || isDescriptionChanged, isLeaderChanged); err != nil {
+			return err
 		}
 		return nil
 	})
 }
 
 func (s *TeamsService) DeleteTeam(c context.Context, id uint) error {
-	team_, err := s.teamRepository.FindByID(s.db.WithContext(c), id)
+	team, err := s.teamRepository.FindByID(s.db.WithContext(c), id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return appErrors.ErrTeamNotFound
@@ -274,15 +292,19 @@ func (s *TeamsService) DeleteTeam(c context.Context, id uint) error {
 	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
 		// Set current_team_id = null for all users in this team
 		if err := s.userRepository.UpdateUsersCurrentTeamToNullByTeamID(tx, id); err != nil {
-			return err
+			return appErrors.ErrInternalServerError
 		}
 
 		if err := s.teamRepository.Delete(tx, id); err != nil {
+			return appErrors.ErrInternalServerError
+		}
+
+		if err := s.activityLogService.LogActivityDb(c, tx, types.DeleteTeam, team.ID, team.Name); err != nil {
 			return err
 		}
 
-		if err := s.activityLogService.LogActivityDb(c, tx, types.DeleteTeam, team_.ID, team_.Name); err != nil {
-			return appErrors.ErrInternalServerError
+		if err := s.notificationService.NotifyTeamDeleted(c, tx, team.ID, team.Name); err != nil {
+			return err
 		}
 		return nil
 	})
@@ -336,7 +358,11 @@ func (s *TeamsService) AddMemberToTeam(c context.Context, teamID uint, userID ui
 			}
 
 			if err := s.activityLogService.LogActivityDb(c, tx, types.LeaveTeam, user.ID, user.Email, activeTeamMember.TeamID); err != nil {
-				return appErrors.ErrInternalServerError
+				return err
+			}
+
+			if err := s.notificationService.NotifyTeamMemberRemoved(c, tx, activeTeamMember.TeamID, user.ID, user.Name); err != nil {
+				return err
 			}
 		}
 		// Add new team member record
@@ -356,7 +382,11 @@ func (s *TeamsService) AddMemberToTeam(c context.Context, teamID uint, userID ui
 		}
 
 		if err := s.activityLogService.LogActivityDb(c, tx, types.JoinTeam, user.ID, user.Email, teamID); err != nil {
-			return appErrors.ErrInternalServerError
+			return err
+		}
+
+		if err := s.notificationService.NotifyTeamMemberAdded(c, tx, teamID, user.ID, user.Name); err != nil {
+			return err
 		}
 		return nil
 	})
@@ -415,7 +445,11 @@ func (s *TeamsService) RemoveMemberFromTeam(c context.Context, teamID uint, user
 		}
 
 		if err := s.activityLogService.LogActivityDb(c, tx, types.LeaveTeam, user.ID, user.Email, teamID); err != nil {
-			return appErrors.ErrInternalServerError
+			return err
+		}
+
+		if err := s.notificationService.NotifyTeamMemberRemoved(c, tx, teamID, user.ID, user.Name); err != nil {
+			return err
 		}
 		return nil
 	})

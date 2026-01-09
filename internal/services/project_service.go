@@ -17,14 +17,16 @@ import (
 )
 
 type ProjectService struct {
-	db                 *gorm.DB
-	projectRepository  *repositories.ProjectRepository
-	validationService  *ValidationService
-	activityLogService *ActivityLogService
+	db                  *gorm.DB
+	projectRepository   *repositories.ProjectRepository
+	userRepository      *repositories.UserRepository
+	validationService   *ValidationService
+	activityLogService  *ActivityLogService
+	notificationService *NotificationService
 }
 
-func NewProjectService(db *gorm.DB, projectRepository *repositories.ProjectRepository, validationService *ValidationService, activityLogService *ActivityLogService) *ProjectService {
-	return &ProjectService{db: db, projectRepository: projectRepository, validationService: validationService, activityLogService: activityLogService}
+func NewProjectService(db *gorm.DB, projectRepository *repositories.ProjectRepository, userRepository *repositories.UserRepository, validationService *ValidationService, activityLogService *ActivityLogService, notificationService *NotificationService) *ProjectService {
+	return &ProjectService{db: db, projectRepository: projectRepository, userRepository: userRepository, validationService: validationService, activityLogService: activityLogService, notificationService: notificationService}
 }
 
 func (s *ProjectService) GetAllProjectSummary(c context.Context) []dtos.ProjectSummary {
@@ -95,14 +97,18 @@ func (s *ProjectService) CreateProject(c context.Context, req dtos.CreateOrUpdat
 		}
 
 		if err := s.activityLogService.LogActivityDb(c, tx, types.CreateProject, project.ID, project.Name); err != nil {
-			return appErrors.ErrInternalServerError
+			return err
+		}
+
+		if err := s.notificationService.NotifyProjectCreated(c, tx, project, req.MemberIDs); err != nil {
+			return err
 		}
 		return nil
 	})
 }
 
 func (s *ProjectService) UpdateProject(c context.Context, id uint, req dtos.CreateOrUpdateProjectRequest) error {
-	_, err := s.projectRepository.FindByID(s.db.WithContext(c), id)
+	currentProject, err := s.projectRepository.FindByID(s.db.WithContext(c), id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return appErrors.ErrProjectNotFound
@@ -122,7 +128,7 @@ func (s *ProjectService) UpdateProject(c context.Context, id uint, req dtos.Crea
 		endDate = &req.EndDate.Time
 	}
 
-	project := &models.Project{
+	projectToUpdate := &models.Project{
 		ID:           id,
 		Name:         strings.TrimSpace(req.Name),
 		Abbreviation: strings.TrimSpace(req.Abbreviation),
@@ -133,12 +139,20 @@ func (s *ProjectService) UpdateProject(c context.Context, id uint, req dtos.Crea
 	}
 
 	return s.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
-		if err := s.projectRepository.Update(tx, project, req.MemberIDs); err != nil {
+		if err := s.projectRepository.Update(tx, projectToUpdate, req.MemberIDs); err != nil {
 			return appErrors.ErrInternalServerError
 		}
 
-		if err := s.activityLogService.LogActivityDb(c, tx, types.UpdateProject, project.ID, project.Name); err != nil {
-			return appErrors.ErrInternalServerError
+		if err := s.activityLogService.LogActivityDb(c, tx, types.UpdateProject, projectToUpdate.ID, projectToUpdate.Name); err != nil {
+			return err
+		}
+
+		currentMemberIDs := make([]uint, 0, len(currentProject.Members))
+		for _, member := range currentProject.Members {
+			currentMemberIDs = append(currentMemberIDs, member.ID)
+		}
+		if err := s.notificationService.NotifyProjectUpdated(c, tx, currentProject, currentMemberIDs, projectToUpdate, req.MemberIDs); err != nil {
+			return err
 		}
 		return nil
 	})
@@ -159,7 +173,11 @@ func (s *ProjectService) DeleteProject(c context.Context, id uint) error {
 		}
 
 		if err := s.activityLogService.LogActivityDb(c, tx, types.DeleteProject, project.ID, project.Name); err != nil {
-			return appErrors.ErrInternalServerError
+			return err
+		}
+
+		if err := s.notificationService.NotifyProjectDeleted(c, tx, project.ID, project.Name); err != nil {
+			return err
 		}
 		return nil
 	})
@@ -181,20 +199,24 @@ func (s *ProjectService) ExportProjectsToCSV(c context.Context) ([][]string, err
 		if p.EndDate != nil {
 			endDate = p.EndDate.Format("2006-01-02")
 		}
-		for _, member := range p.Members {
-			data = append(data, []string{
-				fmt.Sprintf("%d", p.ID),
-				p.Name,
-				p.Abbreviation,
-				startDate,
-				endDate,
-				fmt.Sprintf("%d", p.Leader.ID),
-				p.Leader.Name,
-				fmt.Sprintf("%d", p.Team.ID),
-				p.Team.Name,
-				fmt.Sprintf("%d", member.ID),
-				member.Name,
-			})
+		projectBasicInfo := []string{
+			fmt.Sprintf("%d", p.ID),
+			p.Name,
+			p.Abbreviation,
+			startDate,
+			endDate,
+			fmt.Sprintf("%d", p.Leader.ID),
+			p.Leader.Name,
+			fmt.Sprintf("%d", p.Team.ID),
+			p.Team.Name,
+		}
+		if len(p.Members) == 0 {
+			data = append(data, append(projectBasicInfo, "", ""))
+			continue
+		} else {
+			for _, member := range p.Members {
+				data = append(data, append(projectBasicInfo, fmt.Sprintf("%d", member.ID), member.Name))
+			}
 		}
 	}
 	return data, nil

@@ -124,6 +124,17 @@ func (r *ProjectRepository) Delete(db *gorm.DB, id uint) error {
 	return db.Delete(&models.Project{}, id).Error
 }
 
+func (r *ProjectRepository) FindMemberIDsByProjectID(db *gorm.DB, id uint) ([]uint, error) {
+	var userIDs []uint
+	result := db.Table("project_members").
+		Where("project_id = ?", id).
+		Pluck("user_id", &userIDs)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return userIDs, nil
+}
+
 func (r *ProjectRepository) ExistByLeaderId(db *gorm.DB, leaderId uint) (bool, error) {
 	var exists bool
 	result := db.Model(&models.Project{}).

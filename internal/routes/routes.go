@@ -15,6 +15,7 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 	router.GET("/profile/:userId", appContainer.UserProfileHandler.UserUserProfilePageHandler)
 	router.GET("/teams", appContainer.TeamsHandler.TeamsPageHandler)
 	router.GET("/teams/:id", appContainer.TeamsHandler.TeamDetailsPageHandler)
+	router.GET("/notifications", appContainer.NotificationHandler.NotificationsPageHandler)
 
 	// Normal user routes (JWT)
 	apiGroup := router.Group("/api")
@@ -25,6 +26,13 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 		apiGroup.GET("/teams", appContainer.TeamsHandler.ListTeams)
 		apiGroup.GET("/teams/:id", appContainer.TeamsHandler.GetTeamDetails)
 		apiGroup.GET("/teams/:id/members", appContainer.TeamsHandler.GetTeamMembers)
+
+		// Notifications
+		apiGroup.GET("/notifications", appContainer.NotificationHandler.ListNotifications)
+		apiGroup.GET("/notifications/unread-count", appContainer.NotificationHandler.GetUnreadCount)
+		apiGroup.PUT("/notifications/:id/read", appContainer.NotificationHandler.MarkAsRead)
+		apiGroup.PUT("/notifications/read-all", appContainer.NotificationHandler.MarkAllAsRead)
+		apiGroup.DELETE("/notifications/:id", appContainer.NotificationHandler.DeleteNotification)
 	}
 
 	// Admin login flow

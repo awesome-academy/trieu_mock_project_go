@@ -93,6 +93,7 @@ func (s *UserService) CreateUser(c context.Context, req dtos.CreateOrUpdateUserR
 	user := &models.User{
 		Name:          req.Name,
 		Email:         req.Email,
+		Password:      utils.GenerateDefaultHashedPassword(),
 		Birthday:      birthday,
 		PositionID:    req.PositionID,
 		Role:          "user", // Admin role is not allowed to be created here
@@ -329,25 +330,43 @@ func (s *UserService) ExportUsersToCSV(c context.Context) ([][]string, error) {
 		if u.Birthday != nil {
 			birthday = u.Birthday.Format("2006-01-02")
 		}
+		teamID := ""
+		if u.CurrentTeamID != nil {
+			teamID = fmt.Sprintf("%d", *u.CurrentTeamID)
+		}
 		teamName := ""
 		if u.CurrentTeam != nil {
 			teamName = u.CurrentTeam.Name
 		}
-		for _, userSkill := range u.UserSkill {
-			data = append(data, []string{
-				fmt.Sprintf("%d", u.ID),
-				u.Name,
-				u.Email,
-				birthday,
-				fmt.Sprintf("%d", u.Position.ID),
-				u.Position.Name,
-				fmt.Sprintf("%d", *u.CurrentTeamID),
-				teamName,
-				fmt.Sprintf("%d", userSkill.Skill.ID),
-				userSkill.Skill.Name,
-				fmt.Sprintf("%d", userSkill.Level),
-				fmt.Sprintf("%d", userSkill.UsedYearNumber),
-			})
+		teamBasicInfo := []string{
+			fmt.Sprintf("%d", u.ID),
+			u.Name,
+			u.Email,
+			birthday,
+			fmt.Sprintf("%d", u.Position.ID),
+			u.Position.Name,
+			teamID,
+			teamName,
+		}
+
+		if len(u.UserSkill) == 0 {
+			row := append(teamBasicInfo,
+				"",
+				"",
+				"",
+				"",
+			)
+			data = append(data, row)
+		} else {
+			for _, userSkill := range u.UserSkill {
+				row := append(teamBasicInfo,
+					fmt.Sprintf("%d", userSkill.Skill.ID),
+					userSkill.Skill.Name,
+					fmt.Sprintf("%d", userSkill.Level),
+					fmt.Sprintf("%d", userSkill.UsedYearNumber),
+				)
+				data = append(data, row)
+			}
 		}
 	}
 	return data, nil
@@ -470,6 +489,7 @@ func (s *UserService) ImportUsersFromCSV(c context.Context, data [][]string) err
 			user := &models.User{
 				Name:          u.Name,
 				Email:         u.Email,
+				Password:      utils.GenerateDefaultHashedPassword(),
 				Birthday:      u.Birthday,
 				PositionID:    u.PositionID,
 				Role:          "user", // Admin role is not allowed to be created here

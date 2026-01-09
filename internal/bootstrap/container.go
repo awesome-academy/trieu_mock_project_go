@@ -17,19 +17,21 @@ type AppContainer struct {
 	CSRFMiddleware      gin.HandlerFunc
 
 	// Services
-	ValidationService *services.ValidationService
-	AuthService       *services.AuthService
-	UserService       *services.UserService
-	TeamsService      *services.TeamsService
-	PositionService   *services.PositionService
-	ProjectService    *services.ProjectService
-	SkillService      *services.SkillService
+	ValidationService   *services.ValidationService
+	AuthService         *services.AuthService
+	UserService         *services.UserService
+	TeamsService        *services.TeamsService
+	PositionService     *services.PositionService
+	ProjectService      *services.ProjectService
+	SkillService        *services.SkillService
+	NotificationService *services.NotificationService
 
 	// Handlers
-	AuthHandler        *handlers.AuthHandler
-	DashboardHandler   *handlers.DashboardHandler
-	UserProfileHandler *handlers.UserProfileHandler
-	TeamsHandler       *handlers.TeamsHandler
+	AuthHandler         *handlers.AuthHandler
+	DashboardHandler    *handlers.DashboardHandler
+	UserProfileHandler  *handlers.UserProfileHandler
+	TeamsHandler        *handlers.TeamsHandler
+	NotificationHandler *handlers.NotificationHandler
 	// Admin Handlers
 	AdminAuthHandler        *handlers.AdminAuthHandler
 	AdminDashboardHandler   *handlers.AdminDashboardHandler
@@ -52,15 +54,17 @@ func NewAppContainer() *AppContainer {
 	projectMemberRepo := repositories.NewProjectMemberRepository()
 	skillRepo := repositories.NewSkillRepository()
 	activityLogRepo := repositories.NewActivityLogRepository()
+	notificationRepo := repositories.NewNotificationRepository()
 
 	// Initialize services
 	activityLogService := services.NewActivityLogService(config.DB, activityLogRepo)
+	notificationService := services.NewNotificationService(config.DB, notificationRepo, userRepo, teamMemberRepo, projectRepo)
 	validationService := services.NewValidationService(config.DB, teamMemberRepo, userRepo, positionRepo, skillRepo, teamsRepo)
 	authService := services.NewAuthService(config.DB, userRepo, activityLogService)
 	userService := services.NewUserService(config.DB, userRepo, teamsRepo, projectRepo, projectMemberRepo, teamMemberRepo, activityLogService, validationService)
-	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo, userRepo, projectRepo, projectMemberRepo, activityLogService)
+	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo, userRepo, projectRepo, projectMemberRepo, activityLogService, notificationService)
 	positionService := services.NewPositionService(config.DB, positionRepo, activityLogService)
-	projectService := services.NewProjectService(config.DB, projectRepo, validationService, activityLogService)
+	projectService := services.NewProjectService(config.DB, projectRepo, userRepo, validationService, activityLogService, notificationService)
 	skillService := services.NewSkillService(config.DB, skillRepo, activityLogService)
 
 	return &AppContainer{
@@ -70,19 +74,21 @@ func NewAppContainer() *AppContainer {
 		CSRFMiddleware:      middlewares.CSRFMiddleware(),
 
 		// Services
-		ValidationService: validationService,
-		AuthService:       authService,
-		UserService:       userService,
-		TeamsService:      teamsService,
-		PositionService:   positionService,
-		ProjectService:    projectService,
-		SkillService:      skillService,
+		ValidationService:   validationService,
+		AuthService:         authService,
+		UserService:         userService,
+		TeamsService:        teamsService,
+		PositionService:     positionService,
+		ProjectService:      projectService,
+		SkillService:        skillService,
+		NotificationService: notificationService,
 
 		// Handlers
-		AuthHandler:        handlers.NewAuthHandler(authService),
-		DashboardHandler:   handlers.NewDashboardHandler(),
-		UserProfileHandler: handlers.NewUserProfileHandler(userService),
-		TeamsHandler:       handlers.NewTeamsHandler(teamsService),
+		AuthHandler:         handlers.NewAuthHandler(authService),
+		DashboardHandler:    handlers.NewDashboardHandler(),
+		UserProfileHandler:  handlers.NewUserProfileHandler(userService),
+		TeamsHandler:        handlers.NewTeamsHandler(teamsService),
+		NotificationHandler: handlers.NewNotificationHandler(notificationService),
 		// Admin Handlers
 		AdminAuthHandler:        handlers.NewAdminAuthHandler(authService, activityLogService),
 		AdminDashboardHandler:   handlers.NewAdminDashboardHandler(userService),
