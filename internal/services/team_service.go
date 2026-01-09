@@ -25,6 +25,7 @@ type TeamsService struct {
 	projectMemberRepository *repositories.ProjectMemberRepository
 	activityLogService      *ActivityLogService
 	notificationService     *NotificationService
+	emailService            *EmailService
 }
 
 func NewTeamsService(db *gorm.DB,
@@ -34,7 +35,8 @@ func NewTeamsService(db *gorm.DB,
 	projectRepository *repositories.ProjectRepository,
 	projectMemberRepository *repositories.ProjectMemberRepository,
 	activityLogService *ActivityLogService,
-	notificationService *NotificationService) *TeamsService {
+	notificationService *NotificationService,
+	emailService *EmailService) *TeamsService {
 	return &TeamsService{
 		db:                      db,
 		teamRepository:          teamRepository,
@@ -44,6 +46,7 @@ func NewTeamsService(db *gorm.DB,
 		projectMemberRepository: projectMemberRepository,
 		activityLogService:      activityLogService,
 		notificationService:     notificationService,
+		emailService:            emailService,
 	}
 }
 
@@ -192,6 +195,14 @@ func (s *TeamsService) CreateTeam(c context.Context, req dtos.CreateOrUpdateTeam
 		if err := s.notificationService.NotifyTeamCreated(c, tx, team, leader.Name); err != nil {
 			return err
 		}
+
+		// Send email notification to leader
+		s.emailService.SendTeamJoinEmail(dtos.TeamMembershipEmailDTO{
+			To:       leader.Email,
+			UserName: leader.Name,
+			TeamName: team.Name,
+		})
+
 		return nil
 	})
 }
@@ -260,6 +271,13 @@ func (s *TeamsService) UpdateTeam(c context.Context, id uint, req dtos.CreateOrU
 				if err := s.activityLogService.LogActivityDb(c, tx, types.JoinTeam, newLeader.ID, newLeader.Email, team.ID); err != nil {
 					return err
 				}
+
+				// Send email notification to new leader
+				s.emailService.SendTeamJoinEmail(dtos.TeamMembershipEmailDTO{
+					To:       newLeader.Email,
+					UserName: newLeader.Name,
+					TeamName: team.Name,
+				})
 			}
 		} else {
 			if err = s.teamRepository.Update(tx, team); err != nil {
@@ -311,7 +329,8 @@ func (s *TeamsService) DeleteTeam(c context.Context, id uint) error {
 }
 
 func (s *TeamsService) AddMemberToTeam(c context.Context, teamID uint, userID uint) error {
-	if _, err := s.teamRepository.FindByID(s.db.WithContext(c), teamID); err != nil {
+	team, err := s.teamRepository.FindByID(s.db.WithContext(c), teamID)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return appErrors.ErrTeamNotFound
 		}
@@ -364,6 +383,13 @@ func (s *TeamsService) AddMemberToTeam(c context.Context, teamID uint, userID ui
 			if err := s.notificationService.NotifyTeamMemberRemoved(c, tx, activeTeamMember.TeamID, user.ID, user.Name); err != nil {
 				return err
 			}
+
+			// Send leave email for old team
+			s.emailService.SendTeamLeaveEmail(dtos.TeamMembershipEmailDTO{
+				To:       user.Email,
+				UserName: user.Name,
+				TeamName: activeTeam.Name,
+			})
 		}
 		// Add new team member record
 		newMember := &models.TeamMember{
@@ -388,6 +414,14 @@ func (s *TeamsService) AddMemberToTeam(c context.Context, teamID uint, userID ui
 		if err := s.notificationService.NotifyTeamMemberAdded(c, tx, teamID, user.ID, user.Name); err != nil {
 			return err
 		}
+
+		// Send email notification
+		s.emailService.SendTeamJoinEmail(dtos.TeamMembershipEmailDTO{
+			To:       user.Email,
+			UserName: user.Name,
+			TeamName: team.Name,
+		})
+
 		return nil
 	})
 }
@@ -451,6 +485,14 @@ func (s *TeamsService) RemoveMemberFromTeam(c context.Context, teamID uint, user
 		if err := s.notificationService.NotifyTeamMemberRemoved(c, tx, teamID, user.ID, user.Name); err != nil {
 			return err
 		}
+
+		// Send email notification
+		s.emailService.SendTeamLeaveEmail(dtos.TeamMembershipEmailDTO{
+			To:       user.Email,
+			UserName: user.Name,
+			TeamName: team.Name,
+		})
+
 		return nil
 	})
 }
@@ -574,6 +616,13 @@ func (s *TeamsService) ImportTeamsFromCSV(c context.Context, data [][]string) er
 				return err
 			}
 			activityLogs = append(activityLogs, *joinLog)
+
+			// Send email notification to leader
+			s.emailService.SendTeamJoinEmail(dtos.TeamMembershipEmailDTO{
+				To:       leader.Email,
+				UserName: leader.Name,
+				TeamName: newTeam.Name,
+			})
 		}
 
 		if err := s.teamMemberRepository.CreateInBatches(tx, teamMembers, 100); err != nil {

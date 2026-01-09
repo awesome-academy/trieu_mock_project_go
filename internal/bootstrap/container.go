@@ -25,6 +25,7 @@ type AppContainer struct {
 	ProjectService      *services.ProjectService
 	SkillService        *services.SkillService
 	NotificationService *services.NotificationService
+	EmailService        *services.EmailService
 
 	// Handlers
 	AuthHandler         *handlers.AuthHandler
@@ -57,14 +58,15 @@ func NewAppContainer() *AppContainer {
 	notificationRepo := repositories.NewNotificationRepository()
 
 	// Initialize services
+	emailService := services.NewEmailService()
 	activityLogService := services.NewActivityLogService(config.DB, activityLogRepo)
 	notificationService := services.NewNotificationService(config.DB, notificationRepo, userRepo, teamMemberRepo, projectRepo)
 	validationService := services.NewValidationService(config.DB, teamMemberRepo, userRepo, positionRepo, skillRepo, teamsRepo)
 	authService := services.NewAuthService(config.DB, userRepo, activityLogService)
 	userService := services.NewUserService(config.DB, userRepo, teamsRepo, projectRepo, projectMemberRepo, teamMemberRepo, activityLogService, validationService)
-	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo, userRepo, projectRepo, projectMemberRepo, activityLogService, notificationService)
+	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo, userRepo, projectRepo, projectMemberRepo, activityLogService, notificationService, emailService)
 	positionService := services.NewPositionService(config.DB, positionRepo, activityLogService)
-	projectService := services.NewProjectService(config.DB, projectRepo, userRepo, validationService, activityLogService, notificationService)
+	projectService := services.NewProjectService(config.DB, projectRepo, userRepo, validationService, activityLogService, notificationService, emailService)
 	skillService := services.NewSkillService(config.DB, skillRepo, activityLogService)
 
 	return &AppContainer{
@@ -82,6 +84,7 @@ func NewAppContainer() *AppContainer {
 		ProjectService:      projectService,
 		SkillService:        skillService,
 		NotificationService: notificationService,
+		EmailService:        emailService,
 
 		// Handlers
 		AuthHandler:         handlers.NewAuthHandler(authService),
