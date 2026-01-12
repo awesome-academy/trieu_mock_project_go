@@ -11,6 +11,7 @@ import (
 type Config struct {
 	Server        ServerConfig
 	Database      DatabaseConfig
+	Redis         RedisConfig
 	SessionConfig SessionConfig
 	JWT           JWTConfig
 	Mail          MailConfig
@@ -30,6 +31,14 @@ type DatabaseConfig struct {
 	Database     string
 	MaxIdleConns int
 	MaxOpenConns int
+}
+
+type RedisConfig struct {
+	Host     string
+	Port     string
+	Username string
+	Password string
+	DB       int
 }
 
 type SessionConfig struct {
@@ -73,6 +82,10 @@ func LoadConfig() *Config {
 		if err != nil {
 			maxOpenConns = 100
 		}
+		redisDB, err := strconv.Atoi(getEnv("REDIS_DB", "0"))
+		if err != nil {
+			redisDB = 0
+		}
 		smtpPort, err := strconv.Atoi(getEnv("SMTP_PORT", "1025"))
 		if err != nil {
 			smtpPort = 1025
@@ -91,6 +104,13 @@ func LoadConfig() *Config {
 				Database:     getEnv("DB_NAME", "trieu_mock_project_go"),
 				MaxIdleConns: maxIdleConns,
 				MaxOpenConns: maxOpenConns,
+			},
+			Redis: RedisConfig{
+				Host:     getEnv("REDIS_HOST", "localhost"),
+				Port:     getEnv("REDIS_PORT", "6379"),
+				Username: getEnv("REDIS_USERNAME", ""),
+				Password: getEnv("REDIS_PASSWORD", ""),
+				DB:       redisDB,
 			},
 			SessionConfig: SessionConfig{
 				Secret: getEnv("SESSION_SECRET", "trieu-mock-project-go-secret"),

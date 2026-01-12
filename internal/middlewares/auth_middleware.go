@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	appErrors "trieu_mock_project_go/internal/errors"
+	"trieu_mock_project_go/internal/services"
 	"trieu_mock_project_go/internal/utils"
 
 	"github.com/gin-contrib/sessions"
@@ -12,32 +13,39 @@ import (
 )
 
 // extractAndValidateToken extracts and validates JWT token from Authorization header
-// Returns (userID, email, error) with error constants from errors package
-func extractAndValidateToken(c *gin.Context) (uint, string, error) {
+// Returns (userID, email, tokenString, error) with error constants from errors package
+func extractAndValidateToken(c *gin.Context) (uint, string, string, error) {
 	authHeader := c.GetHeader("Authorization")
+	tokenString := ""
+
 	if authHeader == "" {
-		return 0, "", appErrors.ErrMissingAuthHeader
+		return 0, "", "", appErrors.ErrMissingAuthHeader
 	}
 
 	// Extract token from "Bearer <token>"
 	parts := strings.SplitN(authHeader, " ", 2)
-	if len(parts) != 2 || parts[0] != "Bearer" {
-		return 0, "", appErrors.ErrInvalidAuthHeader
+	if len(parts) == 2 && parts[0] == "Bearer" {
+		tokenString = parts[1]
+	} else {
+		return 0, "", "", appErrors.ErrInvalidAuthHeader
 	}
 
-	tokenString := parts[1]
+	if tokenString == "" {
+		return 0, "", "", appErrors.ErrMissingAuthHeader
+	}
+
 	claims, err := utils.ParseJWTToken(tokenString)
 	if err != nil {
-		return 0, "", appErrors.ErrInvalidToken
+		return 0, "", "", appErrors.ErrInvalidToken
 	}
 
-	return claims.UserID, claims.Email, nil
+	return claims.UserID, claims.Email, tokenString, nil
 }
 
-// JWTAuthMiddleware checks JWT token from Authorization header (required)
-func JWTAuthMiddleware() gin.HandlerFunc {
+// JWTAuthMiddleware checks JWT token from Authorization header and verifies it in Redis
+func JWTAuthMiddleware(authService *services.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, email, err := extractAndValidateToken(c)
+		userID, email, tokenString, err := extractAndValidateToken(c)
 		if err != nil {
 			switch err {
 			case appErrors.ErrMissingAuthHeader, appErrors.ErrInvalidAuthHeader, appErrors.ErrInvalidToken:
@@ -49,8 +57,17 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// Check if token exists in Redis
+		isValid, err := authService.IsTokenStoreValid(c.Request.Context(), userID, tokenString)
+		if err != nil || !isValid {
+			appErrors.RespondError(c, http.StatusUnauthorized, "token is invalid or expired")
+			c.Abort()
+			return
+		}
+
 		c.Set("user_id", userID)
 		c.Set("email", email)
+		c.Set("token", tokenString)
 		c.Next()
 	}
 }
@@ -89,4 +106,26 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 
+}
+
+func JWTAuthWSMiddleware(authService *services.AuthService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ticket := c.Query("ticket")
+		if ticket == "" {
+			appErrors.RespondError(c, http.StatusUnauthorized, "missing websocket ticket")
+			c.Abort()
+			return
+		}
+
+		userID, email, err := authService.ConsumeWSTicket(c.Request.Context(), ticket)
+		if err != nil {
+			appErrors.RespondCustomError(c, err, "invalid or expired websocket ticket")
+			c.Abort()
+			return
+		}
+
+		c.Set("user_id", userID)
+		c.Set("email", email)
+		c.Next()
+	}
 }

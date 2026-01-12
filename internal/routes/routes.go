@@ -18,12 +18,16 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 	router.GET("/notifications", appContainer.NotificationHandler.NotificationsPageHandler)
 
 	// WebSocket for notifications
-	router.GET("/ws", appContainer.NotificationHandler.HandleWS)
+	router.GET("/ws", appContainer.JWTAuthWSMiddleware, appContainer.NotificationHandler.HandleWS)
 
 	// Normal user routes (JWT)
 	apiGroup := router.Group("/api")
 	apiGroup.Use(appContainer.JWTAuthMiddleware)
 	{
+		// WebSocket ticket generation
+		apiGroup.POST("/ws-ticket", appContainer.AuthHandler.GenerateWSTicket)
+
+		apiGroup.POST("/logout", appContainer.AuthHandler.Logout)
 		apiGroup.GET("/profile", appContainer.UserProfileHandler.GetMyProfile)
 		apiGroup.GET("/profile/:userId", appContainer.UserProfileHandler.GetUserProfile)
 		apiGroup.GET("/teams", appContainer.TeamsHandler.ListTeams)

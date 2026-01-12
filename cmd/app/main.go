@@ -10,7 +10,7 @@ import (
 	"trieu_mock_project_go/internal/routes"
 
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,6 +21,11 @@ func main() {
 	// Initialize database
 	if err := config.InitDB(); err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
+	}
+
+	// Initialize Redis
+	if err := config.InitRedis(); err != nil {
+		log.Fatalf("Failed to initialize Redis: %v", err)
 	}
 
 	// Create Gin router
@@ -76,7 +81,17 @@ func setupHtmlTemplate(router *gin.Engine) {
 }
 
 func setupSessionConfiguration(router *gin.Engine, cfg *config.Config) {
-	store := cookie.NewStore([]byte(cfg.SessionConfig.Secret))
+	store, err := redis.NewStore(
+		10,
+		"tcp",
+		fmt.Sprintf("%s:%s", cfg.Redis.Host, cfg.Redis.Port),
+		cfg.Redis.Username,
+		cfg.Redis.Password,
+		[]byte(cfg.SessionConfig.Secret),
+	)
+	if err != nil {
+		log.Fatalf("Failed to initialize redis session store: %v", err)
+	}
 	store.Options(sessions.Options{
 		Path:     "/",
 		MaxAge:   cfg.SessionConfig.MaxAge,

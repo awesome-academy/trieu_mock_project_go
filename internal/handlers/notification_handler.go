@@ -7,7 +7,6 @@ import (
 	"trieu_mock_project_go/internal/dtos"
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/services"
-	"trieu_mock_project_go/internal/utils"
 	"trieu_mock_project_go/internal/websocket"
 
 	"github.com/gin-gonic/gin"
@@ -35,17 +34,10 @@ func NewNotificationHandler(notificationService *services.NotificationService, h
 }
 
 func (h *NotificationHandler) HandleWS(c *gin.Context) {
-	token := c.Query("token")
-	if token == "" {
-		log.Println("WS: token missing")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token is required"})
-		return
-	}
-
-	claims, err := utils.ParseJWTToken(token)
-	if err != nil {
-		log.Printf("WS: token invalid: %v", err)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		log.Println("WS: user_id missing")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
@@ -56,7 +48,7 @@ func (h *NotificationHandler) HandleWS(c *gin.Context) {
 	}
 
 	client := &websocket.Client{
-		UserID: claims.UserID,
+		UserID: userID,
 		Conn:   conn,
 		Send:   make(chan *websocket.NotificationMessage, 256),
 	}

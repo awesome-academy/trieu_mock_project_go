@@ -18,6 +18,7 @@ type AppContainer struct {
 	// Middlewares
 	AdminAuthMiddleware gin.HandlerFunc
 	JWTAuthMiddleware   gin.HandlerFunc
+	JWTAuthWSMiddleware gin.HandlerFunc
 	CSRFMiddleware      gin.HandlerFunc
 
 	// Services
@@ -66,10 +67,11 @@ func NewAppContainer() *AppContainer {
 
 	// Initialize services
 	emailService := services.NewEmailService()
+	redisService := services.NewRedisService()
 	activityLogService := services.NewActivityLogService(config.DB, activityLogRepo)
 	notificationService := services.NewNotificationService(config.DB, notificationRepo, userRepo, teamMemberRepo, projectRepo, hub)
 	validationService := services.NewValidationService(config.DB, teamMemberRepo, userRepo, positionRepo, skillRepo, teamsRepo)
-	authService := services.NewAuthService(config.DB, userRepo, activityLogService)
+	authService := services.NewAuthService(config.DB, userRepo, activityLogService, redisService)
 	userService := services.NewUserService(config.DB, userRepo, teamsRepo, projectRepo, projectMemberRepo, teamMemberRepo, activityLogService, validationService)
 	teamsService := services.NewTeamsService(config.DB, teamsRepo, teamMemberRepo, userRepo, projectRepo, projectMemberRepo, activityLogService, notificationService, emailService)
 	positionService := services.NewPositionService(config.DB, positionRepo, activityLogService)
@@ -79,7 +81,8 @@ func NewAppContainer() *AppContainer {
 	return &AppContainer{
 		Hub: hub,
 		// Middlewares
-		JWTAuthMiddleware:   middlewares.JWTAuthMiddleware(),
+		JWTAuthMiddleware:   middlewares.JWTAuthMiddleware(authService),
+		JWTAuthWSMiddleware: middlewares.JWTAuthWSMiddleware(authService),
 		AdminAuthMiddleware: middlewares.AdminAuthMiddleware(),
 		CSRFMiddleware:      middlewares.CSRFMiddleware(),
 
