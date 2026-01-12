@@ -6,11 +6,15 @@ import (
 	"trieu_mock_project_go/internal/middlewares"
 	"trieu_mock_project_go/internal/repositories"
 	"trieu_mock_project_go/internal/services"
+	"trieu_mock_project_go/internal/websocket"
 
 	"github.com/gin-gonic/gin"
 )
 
 type AppContainer struct {
+	// WebSocket Hub
+	Hub *websocket.Hub
+
 	// Middlewares
 	AdminAuthMiddleware gin.HandlerFunc
 	JWTAuthMiddleware   gin.HandlerFunc
@@ -46,6 +50,9 @@ type AppContainer struct {
 }
 
 func NewAppContainer() *AppContainer {
+	// Initialize WebSocket Hub
+	hub := websocket.NewHub()
+
 	// Initialize repositories
 	userRepo := repositories.NewUserRepository()
 	teamsRepo := repositories.NewTeamsRepository()
@@ -60,7 +67,7 @@ func NewAppContainer() *AppContainer {
 	// Initialize services
 	emailService := services.NewEmailService()
 	activityLogService := services.NewActivityLogService(config.DB, activityLogRepo)
-	notificationService := services.NewNotificationService(config.DB, notificationRepo, userRepo, teamMemberRepo, projectRepo)
+	notificationService := services.NewNotificationService(config.DB, notificationRepo, userRepo, teamMemberRepo, projectRepo, hub)
 	validationService := services.NewValidationService(config.DB, teamMemberRepo, userRepo, positionRepo, skillRepo, teamsRepo)
 	authService := services.NewAuthService(config.DB, userRepo, activityLogService)
 	userService := services.NewUserService(config.DB, userRepo, teamsRepo, projectRepo, projectMemberRepo, teamMemberRepo, activityLogService, validationService)
@@ -70,6 +77,7 @@ func NewAppContainer() *AppContainer {
 	skillService := services.NewSkillService(config.DB, skillRepo, activityLogService)
 
 	return &AppContainer{
+		Hub: hub,
 		// Middlewares
 		JWTAuthMiddleware:   middlewares.JWTAuthMiddleware(),
 		AdminAuthMiddleware: middlewares.AdminAuthMiddleware(),
@@ -91,7 +99,7 @@ func NewAppContainer() *AppContainer {
 		DashboardHandler:    handlers.NewDashboardHandler(),
 		UserProfileHandler:  handlers.NewUserProfileHandler(userService),
 		TeamsHandler:        handlers.NewTeamsHandler(teamsService),
-		NotificationHandler: handlers.NewNotificationHandler(notificationService),
+		NotificationHandler: handlers.NewNotificationHandler(notificationService, hub),
 		// Admin Handlers
 		AdminAuthHandler:        handlers.NewAdminAuthHandler(authService, activityLogService),
 		AdminDashboardHandler:   handlers.NewAdminDashboardHandler(userService),

@@ -1,23 +1,69 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"trieu_mock_project_go/internal/dtos"
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/services"
+	"trieu_mock_project_go/internal/utils"
+	"trieu_mock_project_go/internal/websocket"
 
 	"github.com/gin-gonic/gin"
+	gorillaWebsocket "github.com/gorilla/websocket"
 )
+
+var upgrader = gorillaWebsocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true // Allow all origins for now
+	},
+}
 
 type NotificationHandler struct {
 	notificationService *services.NotificationService
+	hub                 *websocket.Hub
 }
 
-func NewNotificationHandler(notificationService *services.NotificationService) *NotificationHandler {
+func NewNotificationHandler(notificationService *services.NotificationService, hub *websocket.Hub) *NotificationHandler {
 	return &NotificationHandler{
 		notificationService: notificationService,
+		hub:                 hub,
 	}
+}
+
+func (h *NotificationHandler) HandleWS(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		log.Println("WS: token missing")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token is required"})
+		return
+	}
+
+	claims, err := utils.ParseJWTToken(token)
+	if err != nil {
+		log.Printf("WS: token invalid: %v", err)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		return
+	}
+
+	conn, upgradeErr := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if upgradeErr != nil {
+		log.Printf("WS: upgrade error: %v", upgradeErr)
+		return
+	}
+
+	client := &websocket.Client{
+		UserID: claims.UserID,
+		Conn:   conn,
+		Send:   make(chan *websocket.NotificationMessage, 256),
+	}
+	h.hub.Register(client)
+
+	go client.ReadPump(h.hub)
+	go client.WritePump(h.hub)
 }
 
 func (h *NotificationHandler) NotificationsPageHandler(c *gin.Context) {

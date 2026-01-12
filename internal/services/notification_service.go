@@ -9,6 +9,7 @@ import (
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/repositories"
 	"trieu_mock_project_go/internal/utils"
+	"trieu_mock_project_go/internal/websocket"
 	"trieu_mock_project_go/models"
 
 	"gorm.io/gorm"
@@ -20,18 +21,21 @@ type NotificationService struct {
 	userRepository         *repositories.UserRepository
 	teamMemberRepository   *repositories.TeamMemberRepository
 	projectRepository      *repositories.ProjectRepository
+	hub                    *websocket.Hub
 }
 
 func NewNotificationService(db *gorm.DB, notificationRepository *repositories.NotificationRepository,
 	userRepository *repositories.UserRepository,
 	teamMemberRepository *repositories.TeamMemberRepository,
-	projectRepository *repositories.ProjectRepository) *NotificationService {
+	projectRepository *repositories.ProjectRepository,
+	hub *websocket.Hub) *NotificationService {
 	return &NotificationService{
 		db:                     db,
 		notificationRepository: notificationRepository,
 		userRepository:         userRepository,
 		teamMemberRepository:   teamMemberRepository,
 		projectRepository:      projectRepository,
+		hub:                    hub,
 	}
 }
 
@@ -86,6 +90,9 @@ func (s *NotificationService) CreateNotificationDb(c context.Context, tx *gorm.D
 	if err := s.notificationRepository.Create(tx, notification); err != nil {
 		return appErrors.ErrInternalServerError
 	}
+
+	s.pushNotification(notification)
+
 	return nil
 }
 
@@ -127,6 +134,7 @@ func (s *NotificationService) NotifyTeamUpdated(c context.Context, tx *gorm.DB, 
 		if err := s.notificationRepository.CreateInBatches(tx, notifications, 100); err != nil {
 			return appErrors.ErrInternalServerError
 		}
+		s.pushNotifications(notifications)
 	}
 	return nil
 }
@@ -155,6 +163,7 @@ func (s *NotificationService) NotifyTeamDeleted(c context.Context, tx *gorm.DB, 
 		if err := s.notificationRepository.CreateInBatches(tx, notifications, 100); err != nil {
 			return appErrors.ErrInternalServerError
 		}
+		s.pushNotifications(notifications)
 	}
 	return nil
 }
@@ -189,6 +198,7 @@ func (s *NotificationService) NotifyTeamMemberAdded(c context.Context, tx *gorm.
 		if err := s.notificationRepository.CreateInBatches(tx, notifications, 100); err != nil {
 			return appErrors.ErrInternalServerError
 		}
+		s.pushNotifications(notifications)
 	}
 	return nil
 }
@@ -223,6 +233,7 @@ func (s *NotificationService) NotifyTeamMemberRemoved(c context.Context, tx *gor
 		if err := s.notificationRepository.CreateInBatches(tx, notifications, 100); err != nil {
 			return appErrors.ErrInternalServerError
 		}
+		s.pushNotifications(notifications)
 	}
 	return nil
 }
@@ -251,6 +262,7 @@ func (s *NotificationService) NotifyProjectCreated(c context.Context, tx *gorm.D
 		if err := s.notificationRepository.CreateInBatches(tx, notifications, 100); err != nil {
 			return appErrors.ErrInternalServerError
 		}
+		s.pushNotifications(notifications)
 	}
 	return nil
 }
@@ -364,6 +376,7 @@ func (s *NotificationService) NotifyProjectUpdated(c context.Context, tx *gorm.D
 		if err := s.notificationRepository.CreateInBatches(tx, notifications, 100); err != nil {
 			return appErrors.ErrInternalServerError
 		}
+		s.pushNotifications(notifications)
 	}
 
 	return nil
@@ -392,6 +405,7 @@ func (s *NotificationService) NotifyProjectDeleted(c context.Context, tx *gorm.D
 		if err := s.notificationRepository.CreateInBatches(tx, notifications, 100); err != nil {
 			return appErrors.ErrInternalServerError
 		}
+		s.pushNotifications(notifications)
 	}
 	return nil
 }
@@ -404,4 +418,22 @@ func (s *NotificationService) isTimeChanged(currentTime, updatedTime *time.Time)
 		return true
 	}
 	return !currentTime.Equal(*updatedTime)
+}
+
+func (s *NotificationService) pushNotification(notification *models.Notification) {
+	s.hub.SendNotification(notification.UserID, &websocket.NotificationMessage{
+		UserID:  notification.UserID,
+		Title:   notification.Title,
+		Content: notification.Content,
+	})
+}
+
+func (s *NotificationService) pushNotifications(notifications []models.Notification) {
+	for _, n := range notifications {
+		s.hub.SendNotification(n.UserID, &websocket.NotificationMessage{
+			UserID:  n.UserID,
+			Title:   n.Title,
+			Content: n.Content,
+		})
+	}
 }
