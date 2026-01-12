@@ -2,15 +2,17 @@ package websocket
 
 import (
 	"encoding/json"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
 
 type Client struct {
-	UserID uint
-	Conn   *websocket.Conn
-	Send   chan *NotificationMessage
+	UserID    uint
+	Conn      *websocket.Conn
+	Send      chan *NotificationMessage
+	closeOnce sync.Once
 }
 
 type NotificationMessage struct {
@@ -21,8 +23,7 @@ type NotificationMessage struct {
 
 func (c *Client) ReadPump(hub *Hub) {
 	defer func() {
-		hub.Unregister(c)
-		c.Conn.Close()
+		c.Close(hub)
 	}()
 
 	c.Conn.SetReadLimit(512)
@@ -40,11 +41,11 @@ func (c *Client) ReadPump(hub *Hub) {
 	}
 }
 
-func (c *Client) WritePump() {
+func (c *Client) WritePump(hub *Hub) {
 	ticker := time.NewTicker(50 * time.Second)
 	defer func() {
 		ticker.Stop()
-		c.Conn.Close()
+		c.Close(hub)
 	}()
 
 	for {
@@ -70,4 +71,12 @@ func (c *Client) WritePump() {
 			}
 		}
 	}
+}
+
+func (c *Client) Close(hub *Hub) {
+	c.closeOnce.Do(func() {
+		close(c.Send)
+		hub.Unregister(c)
+		c.Conn.Close()
+	})
 }

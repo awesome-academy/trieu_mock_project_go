@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"log"
 	"sync"
 )
 
@@ -30,26 +31,35 @@ func (h *Hub) Unregister(c *Client) {
 	defer h.mu.Unlock()
 
 	if clients, ok := h.clients[c.UserID]; ok {
-		if _, exists := clients[c]; exists {
-			delete(clients, c)
-			close(c.Send)
-		}
+		delete(clients, c)
 		if len(clients) == 0 {
 			delete(h.clients, c.UserID)
 		}
 	}
 }
 
-func (h *Hub) SendNotification(userID uint, notificationMsg *NotificationMessage) {
+func (h *Hub) SendNotification(userID uint, msg *NotificationMessage) {
 	h.mu.RLock()
-	clients := h.clients[userID]
+	clientsMap := h.clients[userID]
+
+	clients := make([]*Client, 0, len(clientsMap))
+	for c := range clientsMap {
+		clients = append(clients, c)
+	}
 	h.mu.RUnlock()
 
-	for c := range clients {
-		select {
-		case c.Send <- notificationMsg:
-		default:
-			go h.Unregister(c)
-		}
+	for _, c := range clients {
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("Recovered in SendNotification: %v", r)
+				}
+			}()
+			select {
+			case c.Send <- msg:
+			default:
+				go c.Close(h)
+			}
+		}()
 	}
 }

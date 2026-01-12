@@ -63,7 +63,7 @@ func (h *NotificationHandler) HandleWS(c *gin.Context) {
 	h.hub.Register(client)
 
 	go client.ReadPump(h.hub)
-	go client.WritePump()
+	go client.WritePump(h.hub)
 }
 
 func (h *NotificationHandler) NotificationsPageHandler(c *gin.Context) {
