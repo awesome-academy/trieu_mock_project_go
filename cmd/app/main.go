@@ -43,6 +43,9 @@ func main() {
 	// Initialize app container
 	appContainer := bootstrap.NewAppContainer()
 
+	// Start Redis subscription for user notifications
+	appContainer.StartSubscriptionForNotifications()
+
 	// Setup routes
 	routes.SetupRoutes(router, appContainer)
 
