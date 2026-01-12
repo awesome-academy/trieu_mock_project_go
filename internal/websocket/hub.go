@@ -1,9 +1,16 @@
 package websocket
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"sync"
+
+	"github.com/redis/go-redis/v9"
 )
+
+const RedisNotificationChannel = "user_notifications"
 
 type Hub struct {
 	mu      sync.RWMutex
@@ -61,5 +68,26 @@ func (h *Hub) SendNotification(userID uint, msg *NotificationMessage) {
 				go c.Close(h)
 			}
 		}()
+	}
+}
+
+func (h *Hub) SubscribeToRedis(ctx context.Context, redisClient *redis.Client, channel string) {
+	pubsub := redisClient.Subscribe(ctx, channel)
+	defer pubsub.Close()
+
+	ch := pubsub.Channel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case msg := <-ch:
+			var notification NotificationMessage
+			if err := json.Unmarshal([]byte(msg.Payload), &notification); err != nil {
+				fmt.Printf("Error unmarshaling redis notification: %v\n", err)
+				continue
+			}
+			h.SendNotification(notification.UserID, &notification)
+		}
 	}
 }

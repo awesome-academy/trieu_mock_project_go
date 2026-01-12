@@ -34,3 +34,11 @@ func (s *RedisService) Exists(ctx context.Context, key string) (bool, error) {
 	n, err := s.client.Exists(ctx, key).Result()
 	return n > 0, err
 }
+
+func (s *RedisService) Publish(ctx context.Context, channel string, message interface{}) error {
+	return s.client.Publish(ctx, channel, message).Err()
+}
+
+func (s *RedisService) Subscribe(ctx context.Context, channel string) *redis.PubSub {
+	return s.client.Subscribe(ctx, channel)
+}

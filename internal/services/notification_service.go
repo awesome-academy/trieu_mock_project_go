@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 	"trieu_mock_project_go/helpers"
@@ -21,6 +22,7 @@ type NotificationService struct {
 	userRepository         *repositories.UserRepository
 	teamMemberRepository   *repositories.TeamMemberRepository
 	projectRepository      *repositories.ProjectRepository
+	redisService           *RedisService
 	hub                    *websocket.Hub
 }
 
@@ -28,6 +30,7 @@ func NewNotificationService(db *gorm.DB, notificationRepository *repositories.No
 	userRepository *repositories.UserRepository,
 	teamMemberRepository *repositories.TeamMemberRepository,
 	projectRepository *repositories.ProjectRepository,
+	redisService *RedisService,
 	hub *websocket.Hub) *NotificationService {
 	return &NotificationService{
 		db:                     db,
@@ -35,6 +38,7 @@ func NewNotificationService(db *gorm.DB, notificationRepository *repositories.No
 		userRepository:         userRepository,
 		teamMemberRepository:   teamMemberRepository,
 		projectRepository:      projectRepository,
+		redisService:           redisService,
 		hub:                    hub,
 	}
 }
@@ -421,19 +425,27 @@ func (s *NotificationService) isTimeChanged(currentTime, updatedTime *time.Time)
 }
 
 func (s *NotificationService) pushNotification(notification *models.Notification) {
-	s.hub.SendNotification(notification.UserID, &websocket.NotificationMessage{
+	msg := &websocket.NotificationMessage{
 		UserID:  notification.UserID,
 		Title:   notification.Title,
 		Content: notification.Content,
-	})
+	}
+
+	msgData, err := json.Marshal(msg)
+	if err != nil {
+		fmt.Printf("Error marshaling notification: %v\n", err)
+		return
+	}
+
+	if err := s.redisService.Publish(context.Background(), websocket.RedisNotificationChannel, msgData); err != nil {
+		fmt.Printf("Error publishing notification to Redis: %v\n", err)
+		// Fallback to local push if Redis fails
+		s.hub.SendNotification(notification.UserID, msg)
+	}
 }
 
 func (s *NotificationService) pushNotifications(notifications []models.Notification) {
 	for _, n := range notifications {
-		s.hub.SendNotification(n.UserID, &websocket.NotificationMessage{
-			UserID:  n.UserID,
-			Title:   n.Title,
-			Content: n.Content,
-		})
+		s.pushNotification(&n)
 	}
 }

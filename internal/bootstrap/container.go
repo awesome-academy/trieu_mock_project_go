@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"context"
 	"trieu_mock_project_go/internal/config"
 	"trieu_mock_project_go/internal/handlers"
 	"trieu_mock_project_go/internal/middlewares"
@@ -69,7 +70,7 @@ func NewAppContainer() *AppContainer {
 	emailService := services.NewEmailService()
 	redisService := services.NewRedisService()
 	activityLogService := services.NewActivityLogService(config.DB, activityLogRepo)
-	notificationService := services.NewNotificationService(config.DB, notificationRepo, userRepo, teamMemberRepo, projectRepo, hub)
+	notificationService := services.NewNotificationService(config.DB, notificationRepo, userRepo, teamMemberRepo, projectRepo, redisService, hub)
 	validationService := services.NewValidationService(config.DB, teamMemberRepo, userRepo, positionRepo, skillRepo, teamsRepo)
 	authService := services.NewAuthService(config.DB, userRepo, activityLogService, redisService)
 	userService := services.NewUserService(config.DB, userRepo, teamsRepo, projectRepo, projectMemberRepo, teamMemberRepo, activityLogService, validationService)
@@ -114,4 +115,8 @@ func NewAppContainer() *AppContainer {
 		AdminActivityLogHandler: handlers.NewAdminActivityLogHandler(activityLogService),
 		AdminExportCsvHandler:   handlers.NewAdminExportCsvHandler(userService, positionService, projectService, skillService, teamsService),
 	}
+}
+
+func (c *AppContainer) StartSubscriptionForNotifications() {
+	go c.Hub.SubscribeToRedis(context.Background(), config.RedisClient, websocket.RedisNotificationChannel)
 }
