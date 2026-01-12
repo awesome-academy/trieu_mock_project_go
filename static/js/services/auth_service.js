@@ -23,7 +23,16 @@ const AuthService = {
   /**
    * Logout user
    */
-  logout: function () {
+  logout: async function () {
+    const token = this.getToken();
+    if (token) {
+      try {
+        await API.post("/api/logout");
+      } catch (error) {
+        console.error("Failed to invalidate session on server:", error);
+      }
+    }
+
     localStorage.removeItem("accessToken");
     localStorage.removeItem("userEmail");
     localStorage.removeItem("userName");

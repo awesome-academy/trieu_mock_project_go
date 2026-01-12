@@ -46,48 +46,55 @@ const NotificationApp = {
     const token = localStorage.getItem("accessToken");
     if (!token) return;
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    // JWT is currently passed via query params.
-    // This will be replaced with a Redis-backed WebSocket ticket for secure authentication.
-    const wsUrl = `${protocol}//${window.location.host}/ws?token=${token}`;
+    API.post("/api/ws-ticket")
+      .done((response) => {
+        const ticket = response.ticket;
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const wsUrl = `${protocol}//${window.location.host}/ws?ticket=${ticket}`;
 
-    this.socket = new WebSocket(wsUrl);
+        this.socket = new WebSocket(wsUrl);
 
-    this.socket.onopen = () => {
-      console.log("WebSocket connected for notifications");
-    };
+        this.socket.onopen = () => {
+          console.log("WebSocket connected for notifications");
+        };
 
-    this.socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        this.showToast(data.title, data.content);
+        this.socket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            this.showToast(data.title, data.content);
 
-        // Refresh count with debounce and delay to handle DB transaction race condition
-        this.loadUnreadCount(500);
+            // Refresh count with debounce and delay to handle DB transaction race condition
+            this.loadUnreadCount(500);
 
-        // Notify other components (like the notifications list page)
-        // Using a small delay to ensure DB transaction is committed before components refresh
-        setTimeout(() => {
-          window.dispatchEvent(
-            new CustomEvent("notificationReceived", { detail: data })
+            // Notify other components (like the notifications list page)
+            // Using a small delay to ensure DB transaction is committed before components refresh
+            setTimeout(() => {
+              window.dispatchEvent(
+                new CustomEvent("notificationReceived", { detail: data })
+              );
+            }, 500);
+          } catch (err) {
+            console.error("Error parsing WebSocket message:", err);
+          }
+        };
+
+        this.socket.onclose = (event) => {
+          console.log(
+            "WebSocket connection closed. Attempting to reconnect..."
           );
-        }, 500);
-      } catch (err) {
-        console.error("Error parsing WebSocket message:", err);
-      }
-    };
+          setTimeout(() => {
+            this.initWebSocket();
+          }, 5000); // Reconnect after 5 seconds
+        };
 
-    this.socket.onclose = (event) => {
-      console.log("WebSocket connection closed. Attempting to reconnect...");
-      setTimeout(() => {
-        this.initWebSocket();
-      }, 5000); // Reconnect after 5 seconds
-    };
-
-    this.socket.onerror = (error) => {
-      console.error("WebSocket error:", error);
-      this.socket.close();
-    };
+        this.socket.onerror = (error) => {
+          console.error("WebSocket error:", error);
+          this.socket.close();
+        };
+      })
+      .fail((error) => {
+        console.error("Failed to generate WebSocket ticket:", error);
+      });
   },
 
   /**

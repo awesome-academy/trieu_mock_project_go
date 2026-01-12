@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 	"trieu_mock_project_go/internal/dtos"
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/services"
@@ -45,6 +46,11 @@ func (h *AuthHandler) UserLogin(c *gin.Context) {
 		return
 	}
 
+	if err := h.authService.StoreToken(c.Request.Context(), user.ID, token, 24*time.Hour); err != nil {
+		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to store session")
+		return
+	}
+
 	resp := dtos.LoginResponse{}
 	resp.User.ID = user.ID
 	resp.User.Name = user.Name
@@ -52,4 +58,32 @@ func (h *AuthHandler) UserLogin(c *gin.Context) {
 	resp.User.AccessToken = token
 
 	c.JSON(http.StatusOK, resp)
+}
+
+func (h *AuthHandler) GenerateWSTicket(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	email := c.GetString("email")
+
+	ticket, err := h.authService.CreateWSTicket(c.Request.Context(), userID, email)
+	if err != nil {
+		appErrors.RespondError(c, http.StatusInternalServerError, "Failed to generate WebSocket ticket")
+		return
+	}
+
+	c.JSON(http.StatusOK, dtos.WSTicketResponse{Ticket: ticket})
+}
+
+func (h *AuthHandler) Logout(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	token := c.GetString("token")
+	email := c.GetString("user_email")
+
+	if userID != 0 && token != "" {
+		if err := h.authService.Logout(c.Request.Context(), userID, token, email); err != nil {
+			appErrors.RespondCustomError(c, err, "Failed to logout")
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
 }

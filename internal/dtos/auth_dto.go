@@ -15,3 +15,7 @@ type LoginResponse struct {
 		AccessToken string `json:"access_token"`
 	} `json:"user"`
 }
+
+type WSTicketResponse struct {
+	Ticket string `json:"ticket"`
+}
