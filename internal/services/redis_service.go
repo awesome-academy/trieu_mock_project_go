@@ -35,6 +35,14 @@ func (s *RedisService) Exists(ctx context.Context, key string) (bool, error) {
 	return n > 0, err
 }
 
+func (s *RedisService) Incr(ctx context.Context, key string) (int64, error) {
+	return s.client.Incr(ctx, key).Result()
+}
+
+func (s *RedisService) Expire(ctx context.Context, key string, expiration time.Duration) (bool, error) {
+	return s.client.Expire(ctx, key, expiration).Result()
+}
+
 func (s *RedisService) Publish(ctx context.Context, channel string, message interface{}) error {
 	return s.client.Publish(ctx, channel, message).Err()
 }

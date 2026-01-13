@@ -7,6 +7,9 @@ import (
 )
 
 func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
+	// Global middleware
+	router.Use(appContainer.RateLimitMiddleware)
+
 	// User endpoint
 	router.GET("/login", appContainer.AuthHandler.ShowLoginPage)
 	router.POST("/login", appContainer.AuthHandler.UserLogin)
