@@ -28,6 +28,11 @@ func main() {
 		log.Fatalf("Failed to initialize Redis: %v", err)
 	}
 
+	// Initialize RabbitMQ
+	if err := config.InitRabbitMQ(); err != nil {
+		log.Fatalf("Failed to initialize RabbitMQ: %v", err)
+	}
+
 	// Create Gin router
 	router := gin.Default()
 
@@ -45,6 +50,9 @@ func main() {
 
 	// Start Redis subscription for user notifications
 	appContainer.StartSubscriptionForNotifications()
+
+	// Start RabbitMQ email worker
+	appContainer.StartEmailWorker()
 
 	// Setup routes
 	routes.SetupRoutes(router, appContainer)

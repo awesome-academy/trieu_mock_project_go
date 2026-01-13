@@ -12,22 +12,29 @@ import (
 )
 
 type EmailService struct {
-	config config.MailConfig
+	config          config.MailConfig
+	rabbitMQService *RabbitMQService
 }
 
-func NewEmailService() *EmailService {
+func NewEmailService(rabbitMQService *RabbitMQService) *EmailService {
 	cfg := config.LoadConfig()
-	return &EmailService{config: cfg.Mail}
+	return &EmailService{
+		config:          cfg.Mail,
+		rabbitMQService: rabbitMQService,
+	}
 }
 
-func (s *EmailService) send(to string, subject string, templateName string, data interface{}) {
-	// Send email in a goroutine to avoid blocking
-	go func() {
-		err := s.SendEmail(to, subject, templateName, data)
-		if err != nil {
-			log.Printf("Failed to send email to %s: %v", to, err)
-		}
-	}()
+func (s *EmailService) enqueue(to string, subject string, templateName string, data interface{}) {
+	job := dtos.EmailJobDTO{
+		To:           to,
+		Subject:      subject,
+		TemplateName: templateName,
+		Data:         data,
+	}
+	err := s.rabbitMQService.PublishEmailJob(job)
+	if err != nil {
+		log.Printf("Failed to enqueue email job: %v", err)
+	}
 }
 
 func (s *EmailService) SendEmail(to string, subject string, templateName string, data interface{}) error {
@@ -54,17 +61,17 @@ func (s *EmailService) SendEmail(to string, subject string, templateName string,
 }
 
 func (s *EmailService) SendTeamJoinEmail(data dtos.TeamMembershipEmailDTO) {
-	s.send(data.To, "Welcome to Team "+data.TeamName, "team_join.html", data)
+	s.enqueue(data.To, "Welcome to Team "+data.TeamName, "team_join.html", data)
 }
 
 func (s *EmailService) SendTeamLeaveEmail(data dtos.TeamMembershipEmailDTO) {
-	s.send(data.To, "Leaving Team "+data.TeamName, "team_leave.html", data)
+	s.enqueue(data.To, "Leaving Team "+data.TeamName, "team_leave.html", data)
 }
 
 func (s *EmailService) SendProjectJoinEmail(data dtos.ProjectMembershipEmailDTO) {
-	s.send(data.To, "Assigned to Project "+data.ProjectName, "project_join.html", data)
+	s.enqueue(data.To, "Assigned to Project "+data.ProjectName, "project_join.html", data)
 }
 
 func (s *EmailService) SendProjectLeaveEmail(data dtos.ProjectMembershipEmailDTO) {
-	s.send(data.To, "Removed from Project "+data.ProjectName, "project_leave.html", data)
+	s.enqueue(data.To, "Removed from Project "+data.ProjectName, "project_leave.html", data)
 }

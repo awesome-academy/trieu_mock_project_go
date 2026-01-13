@@ -12,6 +12,7 @@ type Config struct {
 	Server        ServerConfig
 	Database      DatabaseConfig
 	Redis         RedisConfig
+	RabbitMQ      RabbitMQConfig
 	SessionConfig SessionConfig
 	JWT           JWTConfig
 	Mail          MailConfig
@@ -39,6 +40,13 @@ type RedisConfig struct {
 	Username string
 	Password string
 	DB       int
+}
+
+type RabbitMQConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
 }
 
 type SessionConfig struct {
@@ -111,6 +119,12 @@ func LoadConfig() *Config {
 				Username: getEnv("REDIS_USERNAME", ""),
 				Password: getEnv("REDIS_PASSWORD", ""),
 				DB:       redisDB,
+			},
+			RabbitMQ: RabbitMQConfig{
+				Host:     getEnv("RABBITMQ_HOST", "localhost"),
+				Port:     getEnv("RABBITMQ_PORT", "5672"),
+				User:     getEnv("RABBITMQ_USER", "guest"),
+				Password: getEnv("RABBITMQ_PASSWORD", "guest"),
 			},
 			SessionConfig: SessionConfig{
 				Secret: getEnv("SESSION_SECRET", "trieu-mock-project-go-secret"),
