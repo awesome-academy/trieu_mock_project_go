@@ -64,10 +64,10 @@ func (s *RabbitMQService) PublishEmailJob(job interface{}) *appErrors.AppError {
 	return nil
 }
 
-func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) {
+func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) error {
 	ch, err := s.conn.Channel()
 	if err != nil {
-		log.Fatalf("failed to open a channel: %v", err)
+		return err
 	}
 	// We don't close the channel here because we want to keep consuming
 
@@ -80,7 +80,7 @@ func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) {
 		nil,        // arguments
 	)
 	if err != nil {
-		log.Fatalf("failed to declare a queue: %v", err)
+		return err
 	}
 
 	msgs, err := ch.Consume(
@@ -93,7 +93,7 @@ func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) {
 		nil,    // args
 	)
 	if err != nil {
-		log.Fatalf("failed to register a consumer: %v", err)
+		return err
 	}
 
 	go func() {
@@ -110,4 +110,5 @@ func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) {
 	}()
 
 	log.Printf(" [*] Waiting for messages in %s.", EmailQueue)
+	return nil
 }

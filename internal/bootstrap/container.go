@@ -3,6 +3,9 @@ package bootstrap
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"log"
+	"time"
 	"trieu_mock_project_go/internal/config"
 	"trieu_mock_project_go/internal/dtos"
 	"trieu_mock_project_go/internal/handlers"
@@ -126,14 +129,28 @@ func (c *AppContainer) StartSubscriptionForNotifications() {
 	go c.Hub.SubscribeToRedis(context.Background(), config.RedisClient, websocket.RedisNotificationChannel)
 }
 
-func (c *AppContainer) StartEmailWorker() {
-	c.RabbitMQService.ConsumeEmailJobs(func(body []byte) error {
-		var job dtos.EmailJobDTO
+func (c *AppContainer) StartEmailWorker() error {
+	maxRetries := 5
+	retryInterval := 5 * time.Second
 
-		if err := json.Unmarshal(body, &job); err != nil {
-			return err
+	for i := range maxRetries {
+		err := c.RabbitMQService.ConsumeEmailJobs(func(body []byte) error {
+			var job dtos.EmailJobDTO
+
+			if err := json.Unmarshal(body, &job); err != nil {
+				return err
+			}
+
+			return c.EmailService.SendEmail(job.To, job.Subject, job.TemplateName, job.Data)
+		})
+
+		if err == nil {
+			return nil
 		}
 
-		return c.EmailService.SendEmail(job.To, job.Subject, job.TemplateName, job.Data)
-	})
+		log.Printf("Failed to start email worker (attempt %d/%d): %v. Retrying in %v...", i+1, maxRetries, err, retryInterval)
+		time.Sleep(retryInterval)
+	}
+
+	return fmt.Errorf("failed to start email worker after %d retries", maxRetries)
 }

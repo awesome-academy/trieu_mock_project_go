@@ -52,7 +52,9 @@ func main() {
 	appContainer.StartSubscriptionForNotifications()
 
 	// Start RabbitMQ email worker
-	appContainer.StartEmailWorker()
+	if err := appContainer.StartEmailWorker(); err != nil {
+		log.Fatalf("Failed to start email worker: %v", err)
+	}
 
 	// Setup routes
 	routes.SetupRoutes(router, appContainer)
