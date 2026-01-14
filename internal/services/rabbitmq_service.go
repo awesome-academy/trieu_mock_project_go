@@ -51,10 +51,12 @@ func (s *RabbitMQService) getConnection() (*amqp.Connection, error) {
 func (s *RabbitMQService) PublishEmailJob(job interface{}) *appErrors.AppError {
 	conn, err := s.getConnection()
 	if err != nil {
+		log.Printf("Error getting RabbitMQ connection: %v", err)
 		return appErrors.ErrInternalServerError
 	}
 	ch, err := conn.Channel()
 	if err != nil {
+		log.Printf("Error creating RabbitMQ channel: %v", err)
 		return appErrors.ErrInternalServerError
 	}
 	defer ch.Close()
@@ -68,12 +70,14 @@ func (s *RabbitMQService) PublishEmailJob(job interface{}) *appErrors.AppError {
 		nil,        // arguments
 	)
 	if err != nil {
-		return appErrors.ErrFailedToPublishMessage
+		log.Printf("Error declaring RabbitMQ queue: %v", err)
+		return appErrors.ErrInternalServerError
 	}
 
 	body, err := json.Marshal(job)
 	if err != nil {
-		return appErrors.ErrFailedToPublishMessage
+		log.Printf("Error marshaling job to JSON: %v", err)
+		return appErrors.ErrInternalServerError
 	}
 
 	err = ch.PublishWithContext(context.Background(),
@@ -87,6 +91,7 @@ func (s *RabbitMQService) PublishEmailJob(job interface{}) *appErrors.AppError {
 			DeliveryMode: amqp.Persistent,
 		})
 	if err != nil {
+		log.Printf("Error publishing message to RabbitMQ: %v", err)
 		return appErrors.ErrFailedToPublishMessage
 	}
 
@@ -103,7 +108,15 @@ func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) erro
 	if err != nil {
 		return err
 	}
-	// We don't close the channel here because we want to keep consuming
+
+	err = ch.Qos(
+		1,     // prefetch count
+		0,     // prefetch size
+		false, // global (applies to this channel only)
+	)
+	if err != nil {
+		return err
+	}
 
 	q, err := ch.QueueDeclare(
 		EmailQueue, // name
