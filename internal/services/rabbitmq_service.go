@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"time"
 	"trieu_mock_project_go/internal/config"
 	appErrors "trieu_mock_project_go/internal/errors"
+	"trieu_mock_project_go_shared/rabbitmq"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
-
-const EmailQueue = "email_queue"
 
 type RabbitMQService struct {
 	conn  *amqp.Connection
@@ -89,10 +87,10 @@ func (s *RabbitMQService) PublishEmailJob(job interface{}) *appErrors.AppError {
 	// Lock when publishing to ensure thread-safety on shared channel
 	s.mu.Lock()
 	err = ch.PublishWithContext(context.Background(),
-		"",         // exchange
-		EmailQueue, // routing key
-		false,      // mandatory
-		false,      // immediate
+		"",                  // exchange
+		rabbitmq.EmailQueue, // routing key
+		false,               // mandatory
+		false,               // immediate
 		amqp.Publishing{
 			ContentType:  "application/json",
 			Body:         body,
@@ -120,96 +118,4 @@ func (s *RabbitMQService) Close() {
 		_ = s.conn.Close()
 	}
 	log.Println("RabbitMQ connection and channels closed gracefully")
-}
-
-func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) error {
-	return s.consumeWithRecovery(handler)
-}
-
-func (s *RabbitMQService) consumeWithRecovery(handler func(body []byte) error) error {
-	for {
-		err := s.startConsumer(handler)
-		if err != nil {
-			log.Printf("CRITICAL: Email consumer stopped with error: %v", err)
-			log.Printf("Attempting to reconnect in 5 seconds...")
-			time.Sleep(5 * time.Second)
-			continue
-		}
-	}
-}
-
-func (s *RabbitMQService) startConsumer(handler func(body []byte) error) error {
-	conn, err := s.getConnection()
-	if err != nil {
-		return fmt.Errorf("failed to get connection: %w", err)
-	}
-
-	ch, err := conn.Channel()
-	if err != nil {
-		return fmt.Errorf("failed to create channel: %w", err)
-	}
-	defer ch.Close()
-
-	err = ch.Qos(
-		1,     // prefetch count
-		0,     // prefetch size
-		false, // global (applies to this channel only)
-	)
-	if err != nil {
-		return fmt.Errorf("failed to set QoS: %w", err)
-	}
-
-	q, err := ch.QueueDeclare(
-		EmailQueue, // name
-		true,       // durable
-		false,      // delete when unused
-		false,      // exclusive
-		false,      // no-wait
-		nil,        // arguments
-	)
-	if err != nil {
-		return fmt.Errorf("failed to declare queue: %w", err)
-	}
-
-	msgs, err := ch.Consume(
-		q.Name, // queue
-		"",     // consumer
-		false,  // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		nil,    // args
-	)
-	if err != nil {
-		return fmt.Errorf("failed to start consuming: %w", err)
-	}
-
-	log.Printf(" [*] Waiting for messages in %s.", EmailQueue)
-
-	// Monitor channel closure
-	closeChan := make(chan *amqp.Error)
-	ch.NotifyClose(closeChan)
-
-	for {
-		select {
-		case err := <-closeChan:
-			if err != nil {
-				return fmt.Errorf("channel closed with error: %w", err)
-			}
-			return fmt.Errorf("channel closed unexpectedly")
-		case d, ok := <-msgs:
-			if !ok {
-				log.Printf("CRITICAL: Messages channel closed, consumer stopping")
-				return fmt.Errorf("messages channel closed")
-			}
-			log.Printf("Received a message: %s", d.Body)
-			err := handler(d.Body)
-			if err != nil {
-				log.Printf("Error processing message: %v", err)
-				_ = d.Nack(false, true)
-			} else {
-				_ = d.Ack(false)
-			}
-		}
-	}
 }

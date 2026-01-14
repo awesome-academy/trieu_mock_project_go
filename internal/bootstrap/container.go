@@ -2,11 +2,8 @@ package bootstrap
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"log"
 	"trieu_mock_project_go/internal/config"
-	"trieu_mock_project_go/internal/dtos"
 	"trieu_mock_project_go/internal/handlers"
 	"trieu_mock_project_go/internal/middlewares"
 	"trieu_mock_project_go/internal/repositories"
@@ -14,15 +11,11 @@ import (
 	"trieu_mock_project_go/internal/websocket"
 
 	"github.com/gin-gonic/gin"
-	"github.com/robfig/cron/v3"
 )
 
 type AppContainer struct {
 	// WebSocket Hub
 	Hub *websocket.Hub
-
-	// Cron scheduler
-	CronScheduler *cron.Cron
 
 	// Middlewares
 	AdminAuthMiddleware gin.HandlerFunc
@@ -91,8 +84,7 @@ func NewAppContainer() *AppContainer {
 	skillService := services.NewSkillService(config.DB, skillRepo, activityLogService)
 
 	return &AppContainer{
-		Hub:           hub,
-		CronScheduler: nil,
+		Hub: hub,
 
 		// Middlewares
 		JWTAuthMiddleware:   middlewares.JWTAuthMiddleware(authService),
@@ -136,35 +128,9 @@ func (c *AppContainer) StartSubscriptionForNotifications() {
 	go c.Hub.SubscribeToRedis(context.Background(), config.RedisClient, websocket.RedisNotificationChannel)
 }
 
-func (c *AppContainer) StartEmailWorker() error {
-	go func() {
-		// ConsumeEmailJobs has built-in automatic recovery and will retry forever
-		_ = c.RabbitMQService.ConsumeEmailJobs(func(body []byte) error {
-			var job dtos.EmailJobDTO
-
-			if err := json.Unmarshal(body, &job); err != nil {
-				return err
-			}
-
-			return c.EmailService.SendEmail(job.To, job.Subject, job.TemplateName, job.Data)
-		})
-	}()
-
-	log.Println("Email worker started with automatic recovery")
-	return nil
-}
-
 func (c *AppContainer) InitializeApp() error {
 	// Start Redis subscription for user notifications
 	c.StartSubscriptionForNotifications()
-
-	// Start RabbitMQ email worker
-	if err := c.StartEmailWorker(); err != nil {
-		return fmt.Errorf("failed to start email worker: %w", err)
-	}
-
-	// Start scheduled cron jobs
-	c.StartCronJobs()
 
 	return nil
 }
@@ -172,32 +138,7 @@ func (c *AppContainer) InitializeApp() error {
 func (c *AppContainer) Shutdown() {
 	log.Println("Shutting down application services...")
 
-	// Stop cron jobs
-	if c.CronScheduler != nil {
-		c.CronScheduler.Stop()
-		log.Println("Cron jobs stopped")
-	}
-
 	if c.RabbitMQService != nil {
 		c.RabbitMQService.Close()
 	}
-}
-
-func (c *AppContainer) StartCronJobs() {
-	cr := cron.New()
-
-	// Schedule project deadline reminders every day at 8 AM
-	_, err := cr.AddFunc("0 8 * * *", func() {
-		log.Println("Running scheduled job: RemindProjectDeadlines")
-		c.ProjectService.RemindProjectDeadlines(context.Background())
-		log.Println("Completed scheduled job: RemindProjectDeadlines")
-	})
-	if err != nil {
-		log.Printf("Error adding cron job for project deadline reminders: %v", err)
-		return
-	}
-
-	cr.Start()
-	c.CronScheduler = cr
-	log.Println("Cron jobs started")
 }

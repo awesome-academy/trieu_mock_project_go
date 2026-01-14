@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 	"trieu_mock_project_go/helpers"
@@ -280,33 +279,6 @@ func (s *ProjectService) ExportProjectsToCSV(c context.Context) ([][]string, err
 		}
 	}
 	return data, nil
-}
-
-func (s *ProjectService) RemindProjectDeadlines(c context.Context) error {
-	projects, err := s.projectRepository.FindProjectsNearDeadline(s.db.WithContext(c), 3)
-	if err != nil {
-		return err
-	}
-
-	log.Printf("Found %d projects nearing deadlines for reminders\n", len(projects))
-	for _, p := range projects {
-		if p.EndDate == nil {
-			continue
-		}
-
-		dueDate := p.EndDate.Format("2006-01-02")
-
-		for _, m := range p.Members {
-			s.emailService.SendProjectDeadlineReminderEmail(dtos.ProjectDeadlineReminderEmailDTO{
-				To:          m.Email,
-				UserName:    m.Name,
-				ProjectName: p.Name,
-				DueDate:     dueDate,
-			})
-		}
-	}
-
-	return nil
 }
 
 func (s *ProjectService) ImportProjectsFromCSV(c context.Context, data [][]string) error {

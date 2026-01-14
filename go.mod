@@ -13,12 +13,11 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/redis/go-redis/v9 v9.17.2
-	github.com/robfig/cron/v3 v3.0.1
 	github.com/utrack/gin-csrf v0.0.0-20190424104817-40fb8d2c8fca
 	golang.org/x/crypto v0.45.0
-	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gorm v1.31.1
+	trieu_mock_project_go_shared v0.0.0
 )
 
 require (
@@ -62,7 +61,8 @@ require (
 	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
 	google.golang.org/protobuf v1.36.9 // indirect
-	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 )
 
 replace github.com/gomodule/redigo => github.com/gomodule/redigo v1.9.3
+
+replace trieu_mock_project_go_shared => ./shared
