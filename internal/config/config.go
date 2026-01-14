@@ -49,6 +49,10 @@ type RabbitMQConfig struct {
 	Password string
 }
 
+func (c RabbitMQConfig) GetURL() string {
+	return "amqp://" + c.User + ":" + c.Password + "@" + c.Host + ":" + c.Port + "/"
+}
+
 type SessionConfig struct {
 	Secret string
 	MaxAge int

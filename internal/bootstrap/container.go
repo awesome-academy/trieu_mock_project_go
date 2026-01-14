@@ -154,3 +154,15 @@ func (c *AppContainer) StartEmailWorker() error {
 
 	return fmt.Errorf("failed to start email worker after %d retries", maxRetries)
 }
+
+func (c *AppContainer) InitializeApp() error {
+	// Start Redis subscription for user notifications
+	c.StartSubscriptionForNotifications()
+
+	// Start RabbitMQ email worker
+	if err := c.StartEmailWorker(); err != nil {
+		return fmt.Errorf("failed to start email worker: %w", err)
+	}
+
+	return nil
+}

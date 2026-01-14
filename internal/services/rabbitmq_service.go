@@ -3,7 +3,9 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
+	"sync"
 	"trieu_mock_project_go/internal/config"
 	appErrors "trieu_mock_project_go/internal/errors"
 
@@ -14,18 +16,46 @@ const EmailQueue = "email_queue"
 
 type RabbitMQService struct {
 	conn *amqp.Connection
+	mu   sync.RWMutex
 }
 
 func NewRabbitMQService() *RabbitMQService {
-	return &RabbitMQService{
-		conn: config.RabbitMQConn,
+	s := &RabbitMQService{}
+	s.connect()
+	return s
+}
+
+func (s *RabbitMQService) connect() error {
+	url := config.LoadConfig().RabbitMQ.GetURL()
+	conn, err := amqp.Dial(url)
+	if err != nil {
+		return err
 	}
+	s.conn = conn
+	return nil
+}
+
+func (s *RabbitMQService) getConnection() (*amqp.Connection, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.conn == nil || s.conn.IsClosed() {
+		if err := s.connect(); err != nil {
+			return nil, fmt.Errorf("failed to connect to rabbitmq: %w", err)
+		}
+	}
+
+	return s.conn, nil
 }
 
 func (s *RabbitMQService) PublishEmailJob(job interface{}) *appErrors.AppError {
-	ch, err := s.conn.Channel()
+	conn, err := s.getConnection()
 	if err != nil {
-		return appErrors.ErrFailedToPublishMessage
+		return appErrors.ErrInternalServerError
+	}
+	ch, err := conn.Channel()
+	if err != nil {
+		return appErrors.ErrInternalServerError
 	}
 	defer ch.Close()
 
@@ -65,7 +95,11 @@ func (s *RabbitMQService) PublishEmailJob(job interface{}) *appErrors.AppError {
 }
 
 func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) error {
-	ch, err := s.conn.Channel()
+	conn, err := s.getConnection()
+	if err != nil {
+		return err
+	}
+	ch, err := conn.Channel()
 	if err != nil {
 		return err
 	}
