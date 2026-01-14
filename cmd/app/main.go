@@ -54,6 +54,9 @@ func main() {
 	// Start RabbitMQ email worker
 	appContainer.StartEmailWorker()
 
+	// Start scheduled jobs
+	appContainer.StartCronJobs()
+
 	// Setup routes
 	routes.SetupRoutes(router, appContainer)
 

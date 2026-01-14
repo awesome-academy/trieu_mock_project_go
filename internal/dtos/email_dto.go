@@ -12,6 +12,13 @@ type ProjectMembershipEmailDTO struct {
 	ProjectName string
 }
 
+type ProjectDeadlineReminderEmailDTO struct {
+	To          string
+	UserName    string
+	ProjectName string
+	DueDate     string
+}
+
 type EmailJobDTO struct {
 	To           string      `json:"to"`
 	Subject      string      `json:"subject"`

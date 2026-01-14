@@ -12,6 +12,7 @@ import (
 	"trieu_mock_project_go/internal/websocket"
 
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron/v3"
 )
 
 type AppContainer struct {
@@ -138,4 +139,13 @@ func (c *AppContainer) StartEmailWorker() {
 
 		return c.EmailService.SendEmail(job.To, job.Subject, job.TemplateName, job.Data)
 	})
+}
+
+func (c *AppContainer) StartCronJobs() {
+	cr := cron.New()
+	// Schedule project deadline reminders every day at 8 AM
+	cr.AddFunc("0 8 * * *", func() {
+		c.ProjectService.RemindProjectDeadlines(context.Background())
+	})
+	cr.Start()
 }
