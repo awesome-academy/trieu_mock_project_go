@@ -75,3 +75,7 @@ func (s *EmailService) SendProjectJoinEmail(data dtos.ProjectMembershipEmailDTO)
 func (s *EmailService) SendProjectLeaveEmail(data dtos.ProjectMembershipEmailDTO) {
 	s.enqueue(data.To, "Removed from Project "+data.ProjectName, "project_leave.html", data)
 }
+
+func (s *EmailService) SendProjectDeadlineReminderEmail(data dtos.ProjectDeadlineReminderEmailDTO) {
+	s.enqueue(data.To, "Project Reminder: "+data.ProjectName+" is due soon", "project_deadline_reminder.html", data)
+}

@@ -14,11 +14,15 @@ import (
 	"trieu_mock_project_go/internal/websocket"
 
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron/v3"
 )
 
 type AppContainer struct {
 	// WebSocket Hub
 	Hub *websocket.Hub
+
+	// Cron scheduler
+	CronScheduler *cron.Cron
 
 	// Middlewares
 	AdminAuthMiddleware gin.HandlerFunc
@@ -87,7 +91,9 @@ func NewAppContainer() *AppContainer {
 	skillService := services.NewSkillService(config.DB, skillRepo, activityLogService)
 
 	return &AppContainer{
-		Hub: hub,
+		Hub:           hub,
+		CronScheduler: nil,
+
 		// Middlewares
 		JWTAuthMiddleware:   middlewares.JWTAuthMiddleware(authService),
 		JWTAuthWSMiddleware: middlewares.JWTAuthWSMiddleware(authService),
@@ -157,12 +163,41 @@ func (c *AppContainer) InitializeApp() error {
 		return fmt.Errorf("failed to start email worker: %w", err)
 	}
 
+	// Start scheduled cron jobs
+	c.StartCronJobs()
+
 	return nil
 }
 
 func (c *AppContainer) Shutdown() {
 	log.Println("Shutting down application services...")
+
+	// Stop cron jobs
+	if c.CronScheduler != nil {
+		c.CronScheduler.Stop()
+		log.Println("Cron jobs stopped")
+	}
+
 	if c.RabbitMQService != nil {
 		c.RabbitMQService.Close()
 	}
+}
+
+func (c *AppContainer) StartCronJobs() {
+	cr := cron.New()
+
+	// Schedule project deadline reminders every day at 8 AM
+	_, err := cr.AddFunc("0 8 * * *", func() {
+		log.Println("Running scheduled job: RemindProjectDeadlines")
+		c.ProjectService.RemindProjectDeadlines(context.Background())
+		log.Println("Completed scheduled job: RemindProjectDeadlines")
+	})
+	if err != nil {
+		log.Printf("Error adding cron job for project deadline reminders: %v", err)
+		return
+	}
+
+	cr.Start()
+	c.CronScheduler = cr
+	log.Println("Cron jobs started")
 }
