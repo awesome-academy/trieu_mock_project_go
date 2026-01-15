@@ -16,13 +16,14 @@ import (
 const EmailQueue = "email_queue"
 
 type RabbitMQService struct {
-	conn *amqp.Connection
-	mu   sync.RWMutex
+	conn  *amqp.Connection
+	pubCh *amqp.Channel
+	mu    sync.RWMutex
 }
 
 func NewRabbitMQService() *RabbitMQService {
 	s := &RabbitMQService{}
-	s.connect()
+	_ = s.connect()
 	return s
 }
 
@@ -33,7 +34,30 @@ func (s *RabbitMQService) connect() error {
 		return err
 	}
 	s.conn = conn
+	s.pubCh = nil
 	return nil
+}
+
+func (s *RabbitMQService) getPublishChannel() (*amqp.Channel, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.conn == nil || s.conn.IsClosed() {
+		if err := s.connect(); err != nil {
+			return nil, fmt.Errorf("failed to connect to rabbitmq: %w", err)
+		}
+	}
+
+	if s.pubCh == nil || s.pubCh.IsClosed() {
+		ch, err := s.conn.Channel()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create channel: %w", err)
+		}
+
+		s.pubCh = ch
+	}
+
+	return s.pubCh, nil
 }
 
 func (s *RabbitMQService) getConnection() (*amqp.Connection, error) {
@@ -50,47 +74,32 @@ func (s *RabbitMQService) getConnection() (*amqp.Connection, error) {
 }
 
 func (s *RabbitMQService) PublishEmailJob(job interface{}) *appErrors.AppError {
-	conn, err := s.getConnection()
-	if err != nil {
-		log.Printf("Error getting RabbitMQ connection: %v", err)
-		return appErrors.ErrInternalServerError
-	}
-	ch, err := conn.Channel()
-	if err != nil {
-		log.Printf("Error creating RabbitMQ channel: %v", err)
-		return appErrors.ErrInternalServerError
-	}
-	defer ch.Close()
-
-	q, err := ch.QueueDeclare(
-		EmailQueue, // name
-		true,       // durable
-		false,      // delete when unused
-		false,      // exclusive
-		false,      // no-wait
-		nil,        // arguments
-	)
-	if err != nil {
-		log.Printf("Error declaring RabbitMQ queue: %v", err)
-		return appErrors.ErrInternalServerError
-	}
-
 	body, err := json.Marshal(job)
 	if err != nil {
 		log.Printf("Error marshaling job to JSON: %v", err)
 		return appErrors.ErrInternalServerError
 	}
 
+	ch, err := s.getPublishChannel()
+	if err != nil {
+		log.Printf("Error getting RabbitMQ channel: %v", err)
+		return appErrors.ErrInternalServerError
+	}
+
+	// Lock when publishing to ensure thread-safety on shared channel
+	s.mu.Lock()
 	err = ch.PublishWithContext(context.Background(),
-		"",     // exchange
-		q.Name, // routing key
-		false,  // mandatory
-		false,  // immediate
+		"",         // exchange
+		EmailQueue, // routing key
+		false,      // mandatory
+		false,      // immediate
 		amqp.Publishing{
 			ContentType:  "application/json",
 			Body:         body,
 			DeliveryMode: amqp.Persistent,
 		})
+	s.mu.Unlock()
+
 	if err != nil {
 		log.Printf("Error publishing message to RabbitMQ: %v", err)
 		return appErrors.ErrFailedToPublishMessage
