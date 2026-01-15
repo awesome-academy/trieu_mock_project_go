@@ -58,6 +58,7 @@ var (
 	ErrNoCSVDataToImport                  = NewAppError(http.StatusBadRequest, "no CSV data to import")
 	ErrInvalidCSVFormat                   = NewAppError(http.StatusBadRequest, "invalid CSV format")
 	ErrFailedToPublishMessage             = NewAppError(http.StatusInternalServerError, "failed to publish message to queue")
+	ErrTooManyRequests                    = NewAppError(http.StatusTooManyRequests, "Too many requests. Please try again later.")
 )
 
 // Error response

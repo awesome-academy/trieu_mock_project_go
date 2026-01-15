@@ -18,10 +18,15 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 	router.GET("/notifications", appContainer.NotificationHandler.NotificationsPageHandler)
 
 	// WebSocket for notifications
-	router.GET("/ws", appContainer.JWTAuthWSMiddleware, appContainer.NotificationHandler.HandleWS)
+	router.GET("/ws",
+		appContainer.RateLimitMiddleware,
+		appContainer.JWTAuthWSMiddleware,
+		appContainer.NotificationHandler.HandleWS,
+	)
 
 	// Normal user routes (JWT)
 	apiGroup := router.Group("/api")
+	apiGroup.Use(appContainer.RateLimitMiddleware)
 	apiGroup.Use(appContainer.JWTAuthMiddleware)
 	{
 		// WebSocket ticket generation
@@ -49,6 +54,7 @@ func SetupRoutes(router *gin.Engine, appContainer *bootstrap.AppContainer) {
 
 	// Admin routes (Session)
 	adminGroup := router.Group("/admin")
+	adminGroup.Use(appContainer.RateLimitMiddleware)
 	adminGroup.Use(appContainer.AdminAuthMiddleware)
 	{
 		// Admin dashboard
