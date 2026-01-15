@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 	"trieu_mock_project_go/internal/config"
 	appErrors "trieu_mock_project_go/internal/errors"
 
@@ -100,14 +101,32 @@ func (s *RabbitMQService) PublishEmailJob(job interface{}) *appErrors.AppError {
 }
 
 func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) error {
+	return s.consumeWithRecovery(handler)
+}
+
+func (s *RabbitMQService) consumeWithRecovery(handler func(body []byte) error) error {
+	for {
+		err := s.startConsumer(handler)
+		if err != nil {
+			log.Printf("CRITICAL: Email consumer stopped with error: %v", err)
+			log.Printf("Attempting to reconnect in 5 seconds...")
+			time.Sleep(5 * time.Second)
+			continue
+		}
+	}
+}
+
+func (s *RabbitMQService) startConsumer(handler func(body []byte) error) error {
 	conn, err := s.getConnection()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get connection: %w", err)
 	}
+
 	ch, err := conn.Channel()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create channel: %w", err)
 	}
+	defer ch.Close()
 
 	err = ch.Qos(
 		1,     // prefetch count
@@ -115,7 +134,7 @@ func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) erro
 		false, // global (applies to this channel only)
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to set QoS: %w", err)
 	}
 
 	q, err := ch.QueueDeclare(
@@ -127,7 +146,7 @@ func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) erro
 		nil,        // arguments
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to declare queue: %w", err)
 	}
 
 	msgs, err := ch.Consume(
@@ -140,11 +159,27 @@ func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) erro
 		nil,    // args
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to start consuming: %w", err)
 	}
 
-	go func() {
-		for d := range msgs {
+	log.Printf(" [*] Waiting for messages in %s.", EmailQueue)
+
+	// Monitor channel closure
+	closeChan := make(chan *amqp.Error)
+	ch.NotifyClose(closeChan)
+
+	for {
+		select {
+		case err := <-closeChan:
+			if err != nil {
+				return fmt.Errorf("channel closed with error: %w", err)
+			}
+			return fmt.Errorf("channel closed unexpectedly")
+		case d, ok := <-msgs:
+			if !ok {
+				log.Printf("CRITICAL: Messages channel closed, consumer stopping")
+				return fmt.Errorf("messages channel closed")
+			}
 			log.Printf("Received a message: %s", d.Body)
 			err := handler(d.Body)
 			if err != nil {
@@ -154,8 +189,5 @@ func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) erro
 				_ = d.Ack(false)
 			}
 		}
-	}()
-
-	log.Printf(" [*] Waiting for messages in %s.", EmailQueue)
-	return nil
+	}
 }
