@@ -4,17 +4,16 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"trieu_mock_project_go/internal/config"
 	appErrors "trieu_mock_project_go/internal/errors"
 	"trieu_mock_project_go/internal/services"
 
 	"github.com/gin-gonic/gin"
 )
 
-// Rate limiting: max 5 requests/s/IP
-const RateLimitRequests = 5
-
 func RateLimitMiddleware(redisService *services.RedisService) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		cfg := config.LoadConfig()
 		ip := c.ClientIP()
 		now := time.Now().Unix()
 		key := fmt.Sprintf("ratelimit:%s:%d", ip, now)
@@ -27,10 +26,12 @@ func RateLimitMiddleware(redisService *services.RedisService) gin.HandlerFunc {
 		}
 
 		if count == 1 {
-			redisService.Expire(c.Request.Context(), key, 2*time.Second)
+			if _, err := redisService.Expire(c.Request.Context(), key, 1*time.Second); err != nil {
+				fmt.Printf("failed to set expiration for rate limit key %s: %v\n", key, err)
+			}
 		}
 
-		if count > RateLimitRequests {
+		if count > int64(cfg.RequestRateLimit) {
 			appErrors.RespondError(c, http.StatusTooManyRequests, appErrors.ErrTooManyRequests.Error())
 			c.Abort()
 			return

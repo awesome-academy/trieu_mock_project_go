@@ -3,7 +3,10 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
+	"sync"
+	"time"
 	"trieu_mock_project_go/internal/config"
 	appErrors "trieu_mock_project_go/internal/errors"
 
@@ -13,50 +16,92 @@ import (
 const EmailQueue = "email_queue"
 
 type RabbitMQService struct {
-	conn *amqp.Connection
+	conn  *amqp.Connection
+	pubCh *amqp.Channel
+	mu    sync.RWMutex
 }
 
 func NewRabbitMQService() *RabbitMQService {
-	return &RabbitMQService{
-		conn: config.RabbitMQConn,
+	s := &RabbitMQService{}
+	_ = s.connect()
+	return s
+}
+
+func (s *RabbitMQService) connect() error {
+	url := config.LoadConfig().RabbitMQ.GetURL()
+	conn, err := amqp.Dial(url)
+	if err != nil {
+		return err
 	}
+	s.conn = conn
+	s.pubCh = nil
+	return nil
+}
+
+func (s *RabbitMQService) getPublishChannel() (*amqp.Channel, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.conn == nil || s.conn.IsClosed() {
+		if err := s.connect(); err != nil {
+			return nil, fmt.Errorf("failed to connect to rabbitmq: %w", err)
+		}
+	}
+
+	if s.pubCh == nil || s.pubCh.IsClosed() {
+		ch, err := s.conn.Channel()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create channel: %w", err)
+		}
+
+		s.pubCh = ch
+	}
+
+	return s.pubCh, nil
+}
+
+func (s *RabbitMQService) getConnection() (*amqp.Connection, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.conn == nil || s.conn.IsClosed() {
+		if err := s.connect(); err != nil {
+			return nil, fmt.Errorf("failed to connect to rabbitmq: %w", err)
+		}
+	}
+
+	return s.conn, nil
 }
 
 func (s *RabbitMQService) PublishEmailJob(job interface{}) *appErrors.AppError {
-	ch, err := s.conn.Channel()
-	if err != nil {
-		return appErrors.ErrFailedToPublishMessage
-	}
-	defer ch.Close()
-
-	q, err := ch.QueueDeclare(
-		EmailQueue, // name
-		true,       // durable
-		false,      // delete when unused
-		false,      // exclusive
-		false,      // no-wait
-		nil,        // arguments
-	)
-	if err != nil {
-		return appErrors.ErrFailedToPublishMessage
-	}
-
 	body, err := json.Marshal(job)
 	if err != nil {
-		return appErrors.ErrFailedToPublishMessage
+		log.Printf("Error marshaling job to JSON: %v", err)
+		return appErrors.ErrInternalServerError
 	}
 
+	ch, err := s.getPublishChannel()
+	if err != nil {
+		log.Printf("Error getting RabbitMQ channel: %v", err)
+		return appErrors.ErrInternalServerError
+	}
+
+	// Lock when publishing to ensure thread-safety on shared channel
+	s.mu.Lock()
 	err = ch.PublishWithContext(context.Background(),
-		"",     // exchange
-		q.Name, // routing key
-		false,  // mandatory
-		false,  // immediate
+		"",         // exchange
+		EmailQueue, // routing key
+		false,      // mandatory
+		false,      // immediate
 		amqp.Publishing{
 			ContentType:  "application/json",
 			Body:         body,
 			DeliveryMode: amqp.Persistent,
 		})
+	s.mu.Unlock()
+
 	if err != nil {
+		log.Printf("Error publishing message to RabbitMQ: %v", err)
 		return appErrors.ErrFailedToPublishMessage
 	}
 
@@ -64,12 +109,55 @@ func (s *RabbitMQService) PublishEmailJob(job interface{}) *appErrors.AppError {
 	return nil
 }
 
-func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) {
-	ch, err := s.conn.Channel()
-	if err != nil {
-		log.Fatalf("failed to open a channel: %v", err)
+func (s *RabbitMQService) Close() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.pubCh != nil && !s.pubCh.IsClosed() {
+		_ = s.pubCh.Close()
 	}
-	// We don't close the channel here because we want to keep consuming
+	if s.conn != nil && !s.conn.IsClosed() {
+		_ = s.conn.Close()
+	}
+	log.Println("RabbitMQ connection and channels closed gracefully")
+}
+
+func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) error {
+	return s.consumeWithRecovery(handler)
+}
+
+func (s *RabbitMQService) consumeWithRecovery(handler func(body []byte) error) error {
+	for {
+		err := s.startConsumer(handler)
+		if err != nil {
+			log.Printf("CRITICAL: Email consumer stopped with error: %v", err)
+			log.Printf("Attempting to reconnect in 5 seconds...")
+			time.Sleep(5 * time.Second)
+			continue
+		}
+	}
+}
+
+func (s *RabbitMQService) startConsumer(handler func(body []byte) error) error {
+	conn, err := s.getConnection()
+	if err != nil {
+		return fmt.Errorf("failed to get connection: %w", err)
+	}
+
+	ch, err := conn.Channel()
+	if err != nil {
+		return fmt.Errorf("failed to create channel: %w", err)
+	}
+	defer ch.Close()
+
+	err = ch.Qos(
+		1,     // prefetch count
+		0,     // prefetch size
+		false, // global (applies to this channel only)
+	)
+	if err != nil {
+		return fmt.Errorf("failed to set QoS: %w", err)
+	}
 
 	q, err := ch.QueueDeclare(
 		EmailQueue, // name
@@ -80,7 +168,7 @@ func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) {
 		nil,        // arguments
 	)
 	if err != nil {
-		log.Fatalf("failed to declare a queue: %v", err)
+		return fmt.Errorf("failed to declare queue: %w", err)
 	}
 
 	msgs, err := ch.Consume(
@@ -93,11 +181,27 @@ func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) {
 		nil,    // args
 	)
 	if err != nil {
-		log.Fatalf("failed to register a consumer: %v", err)
+		return fmt.Errorf("failed to start consuming: %w", err)
 	}
 
-	go func() {
-		for d := range msgs {
+	log.Printf(" [*] Waiting for messages in %s.", EmailQueue)
+
+	// Monitor channel closure
+	closeChan := make(chan *amqp.Error)
+	ch.NotifyClose(closeChan)
+
+	for {
+		select {
+		case err := <-closeChan:
+			if err != nil {
+				return fmt.Errorf("channel closed with error: %w", err)
+			}
+			return fmt.Errorf("channel closed unexpectedly")
+		case d, ok := <-msgs:
+			if !ok {
+				log.Printf("CRITICAL: Messages channel closed, consumer stopping")
+				return fmt.Errorf("messages channel closed")
+			}
 			log.Printf("Received a message: %s", d.Body)
 			err := handler(d.Body)
 			if err != nil {
@@ -107,7 +211,5 @@ func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) {
 				_ = d.Ack(false)
 			}
 		}
-	}()
-
-	log.Printf(" [*] Waiting for messages in %s.", EmailQueue)
+	}
 }

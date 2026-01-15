@@ -2,7 +2,7 @@
 
 ## This script tests the rate limiting middleware by sending concurrent requests to the /api/profile endpoint.
 
-CONCURRENCY=10
+CONCURRENCY=15
 
 do_curl() {
   local id=$1

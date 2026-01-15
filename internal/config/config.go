@@ -9,13 +9,14 @@ import (
 )
 
 type Config struct {
-	Server        ServerConfig
-	Database      DatabaseConfig
-	Redis         RedisConfig
-	RabbitMQ      RabbitMQConfig
-	SessionConfig SessionConfig
-	JWT           JWTConfig
-	Mail          MailConfig
+	Server           ServerConfig
+	Database         DatabaseConfig
+	Redis            RedisConfig
+	RabbitMQ         RabbitMQConfig
+	SessionConfig    SessionConfig
+	JWT              JWTConfig
+	Mail             MailConfig
+	RequestRateLimit int
 }
 
 type ServerConfig struct {
@@ -47,6 +48,10 @@ type RabbitMQConfig struct {
 	Port     string
 	User     string
 	Password string
+}
+
+func (c RabbitMQConfig) GetURL() string {
+	return "amqp://" + c.User + ":" + c.Password + "@" + c.Host + ":" + c.Port + "/"
 }
 
 type SessionConfig struct {
@@ -98,6 +103,10 @@ func LoadConfig() *Config {
 		if err != nil {
 			smtpPort = 1025
 		}
+		requestRateLimit, err := strconv.Atoi(getEnv("REQUEST_RATE_LIMIT", "10"))
+		if err != nil {
+			requestRateLimit = 10
+		}
 		cfg = &Config{
 			Server: ServerConfig{
 				Host: getEnv("SERVER_HOST", "localhost"),
@@ -141,6 +150,7 @@ func LoadConfig() *Config {
 				SMTPPassword: getEnv("SMTP_PASSWORD", ""),
 				SenderEmail:  getEnv("SENDER_EMAIL", "no-reply@trieu-mock-project-go.com"),
 			},
+			RequestRateLimit: requestRateLimit,
 		}
 	})
 	return cfg
