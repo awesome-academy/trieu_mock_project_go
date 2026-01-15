@@ -109,6 +109,19 @@ func (s *RabbitMQService) PublishEmailJob(job interface{}) *appErrors.AppError {
 	return nil
 }
 
+func (s *RabbitMQService) Close() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.pubCh != nil && !s.pubCh.IsClosed() {
+		_ = s.pubCh.Close()
+	}
+	if s.conn != nil && !s.conn.IsClosed() {
+		_ = s.conn.Close()
+	}
+	log.Println("RabbitMQ connection and channels closed gracefully")
+}
+
 func (s *RabbitMQService) ConsumeEmailJobs(handler func(body []byte) error) error {
 	return s.consumeWithRecovery(handler)
 }

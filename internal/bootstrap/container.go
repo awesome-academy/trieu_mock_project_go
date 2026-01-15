@@ -157,3 +157,10 @@ func (c *AppContainer) InitializeApp() error {
 
 	return nil
 }
+
+func (c *AppContainer) Shutdown() {
+	log.Println("Shutting down application services...")
+	if c.RabbitMQService != nil {
+		c.RabbitMQService.Close()
+	}
+}

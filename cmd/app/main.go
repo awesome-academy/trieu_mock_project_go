@@ -1,10 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 	"trieu_mock_project_go/internal/bootstrap"
 	"trieu_mock_project_go/internal/config"
 	"trieu_mock_project_go/internal/routes"
@@ -51,13 +56,7 @@ func main() {
 	// Setup routes
 	routes.SetupRoutes(router, appContainer)
 
-	// Start server
-	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
-	log.Printf("Starting server on %s", addr)
-
-	if err := router.Run(addr); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
-	}
+	startServerWithGracefulShutdown(router, appContainer)
 }
 
 func setupHtmlTemplate(router *gin.Engine) {
@@ -105,4 +104,40 @@ func setupSessionConfiguration(router *gin.Engine, cfg *config.Config) {
 		Secure:   cfg.SessionConfig.Secure,
 	})
 	router.Use(sessions.Sessions("trieu_mock_project_session", store))
+}
+
+func startServerWithGracefulShutdown(router http.Handler, appContainer *bootstrap.AppContainer) {
+	cfg := config.LoadConfig()
+
+	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: router,
+	}
+
+	go func() {
+		log.Printf("Starting server on %s", addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Failed to start server: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutting down server...")
+
+	// Create a deadline to wait for
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown:", err)
+	}
+
+	// Shutdown application services (RabbitMQ, etc.)
+	appContainer.Shutdown()
+
+	log.Println("Server exiting")
 }
