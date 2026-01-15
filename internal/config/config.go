@@ -15,7 +15,6 @@ type Config struct {
 	RabbitMQ         RabbitMQConfig
 	SessionConfig    SessionConfig
 	JWT              JWTConfig
-	Mail             MailConfig
 	RequestRateLimit int
 }
 
@@ -64,14 +63,6 @@ type JWTConfig struct {
 	Secret string
 }
 
-type MailConfig struct {
-	SMTPHost     string
-	SMTPPort     int
-	SMTPUser     string
-	SMTPPassword string
-	SenderEmail  string
-}
-
 var (
 	cfg  *Config
 	once sync.Once
@@ -98,10 +89,6 @@ func LoadConfig() *Config {
 		redisDB, err := strconv.Atoi(getEnv("REDIS_DB", "0"))
 		if err != nil {
 			redisDB = 0
-		}
-		smtpPort, err := strconv.Atoi(getEnv("SMTP_PORT", "1025"))
-		if err != nil {
-			smtpPort = 1025
 		}
 		requestRateLimit, err := strconv.Atoi(getEnv("REQUEST_RATE_LIMIT", "10"))
 		if err != nil {
@@ -142,13 +129,6 @@ func LoadConfig() *Config {
 			},
 			JWT: JWTConfig{
 				Secret: getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
-			},
-			Mail: MailConfig{
-				SMTPHost:     getEnv("SMTP_HOST", "localhost"),
-				SMTPPort:     smtpPort,
-				SMTPUser:     getEnv("SMTP_USER", ""),
-				SMTPPassword: getEnv("SMTP_PASSWORD", ""),
-				SenderEmail:  getEnv("SENDER_EMAIL", "no-reply@trieu-mock-project-go.com"),
 			},
 			RequestRateLimit: requestRateLimit,
 		}
