@@ -65,6 +65,72 @@ services:
     networks:
       - trieu-mock-project-app-network
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trieu-mock-project-app
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8080
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=trieu_mock_project_go
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+      - JWT_SECRET=your-secret-key-change-in-production
+      - SESSION_SECRET=your-session-secret-change-in-production
+      - REQUEST_RATE_LIMIT=10
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - trieu-mock-project-app-network
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: modules/worker/Dockerfile
+    container_name: trieu-mock-project-worker
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=trieu_mock_project_go
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+      - SMTP_HOST=mail-server
+      - SMTP_PORT=1025
+      - SMTP_USER=
+      - SMTP_PASSWORD=
+      - SENDER_EMAIL=no-reply@trieu-mock-project-go.com
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mail-server:
+        condition: service_started
+    networks:
+      - trieu-mock-project-app-network
+    restart: unless-stopped
+
 volumes:
   trieu_mock_project_mysql_data:
   trieu_mock_project_redis_data:
