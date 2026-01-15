@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"log"
 	"trieu_mock_project_go/internal/config"
 	"trieu_mock_project_go/internal/dtos"
 	"trieu_mock_project_go/internal/handlers"
@@ -128,14 +130,39 @@ func (c *AppContainer) StartSubscriptionForNotifications() {
 	go c.Hub.SubscribeToRedis(context.Background(), config.RedisClient, websocket.RedisNotificationChannel)
 }
 
-func (c *AppContainer) StartEmailWorker() {
-	c.RabbitMQService.ConsumeEmailJobs(func(body []byte) error {
-		var job dtos.EmailJobDTO
+func (c *AppContainer) StartEmailWorker() error {
+	go func() {
+		// ConsumeEmailJobs has built-in automatic recovery and will retry forever
+		_ = c.RabbitMQService.ConsumeEmailJobs(func(body []byte) error {
+			var job dtos.EmailJobDTO
 
-		if err := json.Unmarshal(body, &job); err != nil {
-			return err
-		}
+			if err := json.Unmarshal(body, &job); err != nil {
+				return err
+			}
 
-		return c.EmailService.SendEmail(job.To, job.Subject, job.TemplateName, job.Data)
-	})
+			return c.EmailService.SendEmail(job.To, job.Subject, job.TemplateName, job.Data)
+		})
+	}()
+
+	log.Println("Email worker started with automatic recovery")
+	return nil
+}
+
+func (c *AppContainer) InitializeApp() error {
+	// Start Redis subscription for user notifications
+	c.StartSubscriptionForNotifications()
+
+	// Start RabbitMQ email worker
+	if err := c.StartEmailWorker(); err != nil {
+		return fmt.Errorf("failed to start email worker: %w", err)
+	}
+
+	return nil
+}
+
+func (c *AppContainer) Shutdown() {
+	log.Println("Shutting down application services...")
+	if c.RabbitMQService != nil {
+		c.RabbitMQService.Close()
+	}
 }
