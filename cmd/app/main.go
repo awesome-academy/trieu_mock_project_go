@@ -53,9 +53,6 @@ func main() {
 		log.Fatalf("Failed to initialize application services: %v", err)
 	}
 
-	// Start scheduled jobs
-	appContainer.StartCronJobs()
-
 	// Setup routes
 	routes.SetupRoutes(router, appContainer)
 

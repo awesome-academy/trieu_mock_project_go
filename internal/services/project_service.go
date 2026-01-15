@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 	"trieu_mock_project_go/helpers"
@@ -287,6 +288,7 @@ func (s *ProjectService) RemindProjectDeadlines(c context.Context) error {
 		return err
 	}
 
+	log.Printf("Found %d projects nearing deadlines for reminders\n", len(projects))
 	for _, p := range projects {
 		if p.EndDate == nil {
 			continue
